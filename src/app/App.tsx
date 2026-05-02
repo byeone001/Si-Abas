@@ -9,15 +9,35 @@ import { SuccessScreen } from './components/SuccessScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { HelpScreen } from './components/HelpScreen';
+import { StudentManagementScreen } from './components/StudentManagementScreen';
+import { ScheduleManagementScreen } from './components/ScheduleManagementScreen';
+import { ClassManagementScreen } from './components/ClassManagementScreen';
+import { useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
-export type ScreenState = 'dashboard' | 'camera' | 'summary' | 'profile' | 'success' | 'settings' | 'help';
+export type ScreenState = 'dashboard' | 'camera' | 'summary' | 'profile' | 'success' | 'settings' | 'help' | 'students' | 'schedules' | 'classes';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('dashboard');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    // Cek session saat pertama kali load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setIsLoggedIn(true);
+    });
+
+    // Listen perubahan auth (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setIsDrawerOpen(false);
     setCurrentScreen('dashboard');
     setIsLoggedIn(false);
@@ -65,6 +85,15 @@ export default function App() {
             )}
             {currentScreen === 'help' && (
               <HelpScreen onBack={() => setCurrentScreen('dashboard')} />
+            )}
+            {currentScreen === 'students' && (
+              <StudentManagementScreen onBack={() => setCurrentScreen('dashboard')} />
+            )}
+            {currentScreen === 'schedules' && (
+              <ScheduleManagementScreen onBack={() => setCurrentScreen('dashboard')} />
+            )}
+            {currentScreen === 'classes' && (
+              <ClassManagementScreen onBack={() => setCurrentScreen('dashboard')} />
             )}
 
             {/* Overlay Navigation Drawer */}

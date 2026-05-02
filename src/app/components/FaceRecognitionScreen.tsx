@@ -1,16 +1,25 @@
-import { ChevronLeft, AlertTriangle, CheckCircle2, Scan } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, CheckCircle2, Scan, Loader2, MapPin } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import * as faceapi from '@vladmandic/face-api';
 
 interface FaceRecognitionScreenProps {
   onClose: () => void;
   onComplete: () => void;
 }
 
+// Koordinat Sekolah (Contoh: Ganti dengan koordinat asli sekolah)
+const SCHOOL_LOCATION = { lat: -6.175392, lng: 106.827153 }; 
+const ALLOWED_RADIUS = 100; // Meter
+
 export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionScreenProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'failed'>('idle');
+  const [scanStatus, setScanStatus] = useState<'idle' | 'loading_models' | 'scanning' | 'success' | 'failed' | 'outside_area'>('idle');
+  const [detectedName, setDetectedName] = useState<string | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectionInterval = useRef<any>(null);
 
   const statusButtons = [
     { label: 'Hadir', color: 'border-[#16a34a] text-[#16a34a]' },
@@ -19,40 +28,94 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
     { label: 'Alpa', color: 'border-[#dc2626] text-[#dc2626]' },
   ];
 
-  // Efek untuk menyalakan kamera
+  // Fungsi hitung jarak GPS
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
   useEffect(() => {
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' }, // Gunakan kamera depan jika di HP
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+    const initProcess = async () => {
+      // 1. Cek Geofencing dulu
+      setScanStatus('idle');
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const d = calculateDistance(
+            position.coords.latitude, 
+            position.coords.longitude,
+            SCHOOL_LOCATION.lat,
+            SCHOOL_LOCATION.lng
+          );
+          setDistance(Math.round(d));
+
+          if (d > ALLOWED_RADIUS) {
+            // setScanStatus('outside_area'); // Uncomment untuk aktifkan geofencing ketat
+            // return;
+          }
+
+          // 2. Load Models & Start Camera
+          await startFaceDetection();
+        },
+        (err) => {
+          console.error("GPS Error:", err);
+          startFaceDetection(); // Lanjut saja jika GPS gagal (opsional)
         }
+      );
+    };
+
+    async function startFaceDetection() {
+      setScanStatus('loading_models');
+      try {
+        // Load models dari CDN
+        const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]);
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        if (videoRef.current) videoRef.current.srcObject = stream;
         streamRef.current = stream;
-        
-        // Mulai simulasi pemindaian setelah kamera menyala
+
         setScanStatus('scanning');
         
-        // Simulasi proses scanning (3 detik)
-        setTimeout(() => {
-          setScanStatus('success');
-          setSelectedStatus('Hadir');
-        }, 3000);
+        // Loop deteksi
+        detectionInterval.current = setInterval(async () => {
+          if (videoRef.current && scanStatus !== 'success') {
+            const detections = await faceapi.detectSingleFace(
+              videoRef.current, 
+              new faceapi.TinyFaceDetectorOptions()
+            );
+
+            if (detections) {
+              // Simulasi: Jika wajah terdeteksi, kita anggap sukses 
+              // (Di tahap lanjut bisa dibandingkan dengan embedding database)
+              clearInterval(detectionInterval.current);
+              setScanStatus('success');
+              setDetectedName('Budi Santoso'); // Placeholder hasil deteksi
+              setSelectedStatus('Hadir');
+            }
+          }
+        }, 1000);
 
       } catch (err) {
-        console.error("Gagal mengakses kamera:", err);
+        console.error("Init Error:", err);
         setScanStatus('failed');
       }
     }
 
-    startCamera();
+    initProcess();
 
-    // Membersihkan memori & mematikan kamera saat komponen ditutup
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+      if (detectionInterval.current) clearInterval(detectionInterval.current);
     };
   }, []);
 
@@ -60,116 +123,93 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
     <div className="h-full flex flex-col bg-white">
       {/* Top Bar */}
       <div className="bg-[#16a34a] px-2 py-3 flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={onClose}
-          className="flex items-center gap-1 px-3 py-2.5 min-w-[44px] min-h-[44px] rounded-lg active:bg-white/20 hover:bg-white/10 transition-colors"
-        >
+        <button onClick={onClose} className="flex items-center gap-1 px-3 py-2.5 rounded-lg active:bg-white/20 transition-colors">
           <ChevronLeft className="w-5 h-5 text-white" />
           <span className="text-white text-[14px] font-medium">Kembali</span>
         </button>
-        <h1 className="text-white text-[17px] font-semibold flex-1 text-center pr-16 tracking-tight">
-          Presensi Kelas 3A
-        </h1>
+        <h1 className="text-white text-[17px] font-semibold flex-1 text-center pr-16 tracking-tight">Presensi Kelas 3A</h1>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-auto">
         {/* Camera Feed Area */}
         <div className="px-4 pt-5 pb-4">
-          <div className="relative bg-[#0a0a0a] rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center">
+          <div className="relative bg-[#0a0a0a] rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center border-2 border-[#e5e5e5]">
+            <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
             
-            {/* Elemen Video Kamera */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            
-            {/* Fallback Jika Kamera Gagal/Loading */}
-            {scanStatus === 'idle' && (
-              <div className="absolute inset-0 bg-gradient-to-br from-[#262626] to-[#0a0a0a]" />
+            {(scanStatus === 'idle' || scanStatus === 'loading_models') && (
+              <div className="absolute inset-0 bg-[#171717] flex flex-col items-center justify-center gap-3 z-20">
+                <Loader2 className="w-8 h-8 text-[#16a34a] animate-spin" />
+                <p className="text-white text-[12px] font-medium">Menyiapkan Kamera & AI...</p>
+              </div>
             )}
 
             {/* Face Detection Oval */}
-            <div className="relative z-10 w-[70%] aspect-[3/4]">
-              <svg className="w-full h-full" viewBox="0 0 200 280">
-                <ellipse
-                  cx="100"
-                  cy="140"
-                  rx="90"
-                  ry="130"
-                  fill="none"
-                  stroke={scanStatus === 'success' ? '#16a34a' : scanStatus === 'scanning' ? '#fbbf24' : '#ef4444'}
-                  strokeWidth="3"
-                  strokeDasharray={scanStatus === 'scanning' ? "8 6" : "0"}
-                  opacity="0.8"
-                  className={scanStatus === 'scanning' ? 'animate-pulse' : ''}
-                />
-              </svg>
+            <div className="relative z-10 w-[75%] aspect-[3.5/5]">
+              <div className={`absolute inset-0 border-2 rounded-[50%] transition-colors duration-500 ${
+                scanStatus === 'success' ? 'border-[#16a34a] shadow-[0_0_20px_#16a34a]' : 
+                scanStatus === 'scanning' ? 'border-white/40 border-dashed animate-pulse' : 'border-white/20'
+              }`} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-white text-[14px] text-center font-medium drop-shadow-md bg-black/30 px-3 py-1 rounded-full">
-                  {scanStatus === 'scanning' && 'Memindai wajah...'}
+                <div className="text-white text-[11px] font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
+                  {scanStatus === 'scanning' && 'Posisikan Wajah'}
                   {scanStatus === 'success' && 'Wajah Dikenali'}
-                  {scanStatus === 'failed' && 'Kamera Gagal'}
                 </div>
               </div>
             </div>
-
-            {/* Corner Guides */}
-            <div className={`absolute top-12 left-12 w-6 h-6 border-l-4 border-t-4 transition-colors ${scanStatus === 'success' ? 'border-[#16a34a]' : 'border-white/50'}`} />
-            <div className={`absolute top-12 right-12 w-6 h-6 border-r-4 border-t-4 transition-colors ${scanStatus === 'success' ? 'border-[#16a34a]' : 'border-white/50'}`} />
-            <div className={`absolute bottom-12 left-12 w-6 h-6 border-l-4 border-b-4 transition-colors ${scanStatus === 'success' ? 'border-[#16a34a]' : 'border-white/50'}`} />
-            <div className={`absolute bottom-12 right-12 w-6 h-6 border-r-4 border-b-4 transition-colors ${scanStatus === 'success' ? 'border-[#16a34a]' : 'border-white/50'}`} />
           </div>
         </div>
 
-        {/* Feedback Text / Status Pemindaian */}
-        {scanStatus === 'scanning' && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center gap-2 bg-[#fef3c7] border border-[#fbbf24] rounded-lg px-3 py-2.5">
-              <Scan className="w-4 h-4 text-[#d97706] flex-shrink-0 animate-spin-slow" />
-              <p className="text-[#92400e] text-[13px]">Sedang memproses, harap diam sejenak...</p>
+        {/* Location Info */}
+        <div className="px-4 mb-4">
+          <div className="flex items-center gap-3 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-4 py-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${scanStatus === 'outside_area' ? 'bg-[#fef2f2]' : 'bg-[#f0fdf4]'}`}>
+              <MapPin className={`w-4 h-4 ${scanStatus === 'outside_area' ? 'text-[#dc2626]' : 'text-[#16a34a]'}`} />
             </div>
+            <div>
+              <p className="text-[#0a0a0a] text-[13px] font-bold">Verifikasi Lokasi</p>
+              <p className="text-[#737373] text-[11px]">Jarak: {distance !== null ? `${distance}m dari sekolah` : 'Menghitung...'}</p>
+            </div>
+            {scanStatus === 'outside_area' && (
+              <span className="ml-auto text-[#dc2626] text-[10px] font-bold bg-[#fef2f2] px-2 py-1 rounded-md">DI LUAR AREA</span>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Detection Status Success */}
-        {scanStatus === 'success' && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center gap-2 bg-[#f0fdf4] border border-[#86efac] rounded-lg px-3 py-2.5">
-              <CheckCircle2 className="w-4 h-4 text-[#16a34a] flex-shrink-0" />
-              <p className="text-[#0a0a0a] text-[13px]">
-                <span className="font-semibold">Budi Santoso</span> (Cocok - 92%)
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {/* Detection Status Failed */}
-        {scanStatus === 'failed' && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center gap-2 bg-[#fef2f2] border border-[#fca5a5] rounded-lg px-3 py-2.5">
-              <AlertTriangle className="w-4 h-4 text-[#dc2626] flex-shrink-0" />
-              <p className="text-[#991b1b] text-[13px]">
-                Akses kamera ditolak atau tidak ditemukan.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Manual Override Section */}
+        {/* Detection Status Feedback */}
         <div className="px-4 pb-4">
-          <h3 className="text-[#0a0a0a] text-[13px] font-semibold mb-3 tracking-wider">SET MANUAL (JIKA GAGAL)</h3>
+          {scanStatus === 'scanning' && (
+            <div className="flex items-center gap-2 bg-[#fffbeb] border border-[#fef3c7] rounded-xl px-4 py-3">
+              <Scan className="w-4 h-4 text-[#d97706] animate-pulse" />
+              <p className="text-[#92400e] text-[13px] font-medium">Menganalisis wajah...</p>
+            </div>
+          )}
+          {scanStatus === 'success' && (
+            <div className="flex items-center gap-2 bg-[#f0fdf4] border border-[#86efac] rounded-xl px-4 py-3">
+              <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+              <p className="text-[#065f46] text-[13px] font-bold">{detectedName} Teridentifikasi</p>
+            </div>
+          )}
+          {scanStatus === 'failed' && (
+            <div className="flex items-center gap-2 bg-[#fef2f2] border border-[#fecaca] rounded-xl px-4 py-3">
+              <AlertTriangle className="w-4 h-4 text-[#dc2626]" />
+              <p className="text-[#991b1b] text-[13px]">Gagal mengakses kamera atau AI.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Manual Status */}
+        <div className="px-4 pb-8">
+          <h3 className="text-[#737373] text-[11px] font-bold uppercase tracking-widest mb-3">Status Kehadiran</h3>
           <div className="grid grid-cols-4 gap-2">
             {statusButtons.map((btn) => (
               <button
                 key={btn.label}
                 onClick={() => setSelectedStatus(btn.label)}
-                className={`border-2 ${btn.color} ${
-                  selectedStatus === btn.label ? 'bg-opacity-10 scale-95 ring-2 ring-offset-1' : 'bg-white'
-                } rounded-lg py-2.5 text-[13px] font-semibold active:scale-95 transition-all`}
+                className={`border-2 rounded-xl py-3 text-[12px] font-bold transition-all ${
+                  selectedStatus === btn.label 
+                    ? 'border-[#16a34a] bg-[#f0fdf4] text-[#16a34a] shadow-sm scale-95' 
+                    : 'border-[#e5e5e5] bg-white text-[#737373]'
+                }`}
               >
                 {btn.label}
               </button>
@@ -179,15 +219,15 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
       </div>
 
       {/* Bottom Button */}
-      <div className="border-t border-[#e5e5e5] p-4">
+      <div className="border-t border-[#e5e5e5] p-4 bg-[#fafafa]">
         <button
           onClick={onComplete}
-          disabled={!selectedStatus}
-          className={`w-full text-white text-[14px] font-semibold py-3.5 rounded-lg transition-colors ${
-            selectedStatus ? 'bg-[#16a34a] active:bg-[#15803d]' : 'bg-[#a3a3a3] cursor-not-allowed'
+          disabled={!selectedStatus || scanStatus === 'outside_area'}
+          className={`w-full text-white text-[14px] font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 ${
+            selectedStatus && scanStatus !== 'outside_area' ? 'bg-[#16a34a] shadow-[#16a34a]/20' : 'bg-[#d4d4d4] cursor-not-allowed'
           }`}
         >
-          SELESAI & REKAP
+          SIMPAN PRESENSI
         </button>
       </div>
     </div>

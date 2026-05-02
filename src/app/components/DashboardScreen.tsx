@@ -2,6 +2,7 @@ import { Menu, User, MapPin, CheckCircle2, AlertTriangle, Loader2 } from 'lucide
 import { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { supabase } from '@/lib/supabase';
 
 interface DashboardScreenProps {
   onStartAttendance: () => void;
@@ -12,15 +13,39 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer }: DashboardSc
   const [currentDate, setCurrentDate] = useState(new Date());
   const [locationStatus, setLocationStatus] = useState<'idle' | 'checking' | 'success' | 'failed'>('idle');
 
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
+
   // Menghasilkan daftar tanggal dalam minggu ini
   const startDate = startOfWeek(currentDate, { weekStartsOn: 1 }); // Mulai dari Senin
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i));
 
-  const schedules = [
-    { time: '07:00 - 08:30', subject: 'Tematik', class: 'Kelas 3A' },
-    { time: '08:30 - 10:00', subject: 'Matematika', class: 'Kelas 3B' },
-    { time: '10:15 - 11:45', subject: 'Bahasa Indonesia', class: 'Kelas 3A' },
-  ];
+  useEffect(() => {
+    async function fetchSchedules() {
+      try {
+        const { data, error } = await supabase
+          .from('schedules')
+          .select('*, classes(name)');
+        
+        if (data) {
+          const transformed = data.map(s => ({
+            time: `${s.start_time.slice(0, 5)} - ${s.end_time.slice(0, 5)}`,
+            subject: s.subject_name,
+            class: s.classes?.name || 'Unknown Class'
+          }));
+          setSchedules(transformed);
+        } else if (error) {
+          console.error("Error fetching schedules:", error);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setIsLoadingSchedules(false);
+      }
+    }
+
+    fetchSchedules();
+  }, []);
 
   const handleCheckLocation = () => {
     setLocationStatus('checking');
@@ -132,23 +157,34 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer }: DashboardSc
         <div className="px-4 pb-6">
           <h3 className="text-[#0a0a0a] text-[15px] font-semibold mb-3">Jadwal Hari Ini</h3>
           <div className="space-y-3">
-            {schedules.map((schedule, idx) => (
-              <div key={idx} className="border border-[#e5e5e5] rounded-lg p-4 bg-white shadow-sm">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-[#737373] text-[12px]">{schedule.time}</p>
-                    <h4 className="text-[#0a0a0a] text-[15px] font-semibold mt-1">{schedule.subject}</h4>
-                    <p className="text-[#0a0a0a] text-[13px] mt-0.5">{schedule.class}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onStartAttendance}
-                  className="w-full bg-[#16a34a] text-white text-[14px] font-semibold py-2.5 rounded-lg active:bg-[#15803d] active:scale-[0.98] transition-all"
-                >
-                  MULAI PRESENSI
-                </button>
+            {isLoadingSchedules ? (
+              <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                <Loader2 className="w-6 h-6 animate-spin text-[#16a34a] mb-2" />
+                <p className="text-[12px]">Memuat jadwal...</p>
               </div>
-            ))}
+            ) : schedules.length > 0 ? (
+              schedules.map((schedule, idx) => (
+                <div key={idx} className="border border-[#e5e5e5] rounded-lg p-4 bg-white shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-[#737373] text-[12px]">{schedule.time}</p>
+                      <h4 className="text-[#0a0a0a] text-[15px] font-semibold mt-1">{schedule.subject}</h4>
+                      <p className="text-[#0a0a0a] text-[13px] mt-0.5">{schedule.class}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onStartAttendance}
+                    className="w-full bg-[#16a34a] text-white text-[14px] font-semibold py-2.5 rounded-lg active:bg-[#15803d] active:scale-[0.98] transition-all"
+                  >
+                    MULAI PRESENSI
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-10 border border-dashed border-gray-300 rounded-lg">
+                <p className="text-gray-500 text-[13px]">Tidak ada jadwal hari ini</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

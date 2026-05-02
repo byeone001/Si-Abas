@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { User, Home, Settings, HelpCircle, LogOut, AlertTriangle } from 'lucide-react';
-import { ScreenState } from '../App';
+import { User, Home, Settings, HelpCircle, LogOut, AlertTriangle, Users, Calendar } from 'lucide-react';
+import { ScreenState } from '@/app/App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import logoImg from "../../imports/Gemini_Generated_Image_xg3fxbxg3fxbxg3f.png";
+import logoImg from "../../imports/Logo Si-Abas.png";
 
 interface NavigationDrawerProps {
   isOpen: boolean;
@@ -86,6 +86,33 @@ export function NavigationDrawer({ isOpen, onClose, onNavigate, onLogout }: Navi
             >
               <User className="w-5 h-5 text-[#737373]" />
               <span className="text-[#0a0a0a] text-[15px] font-medium">Profil Saya</span>
+            </button>
+
+            <div className="h-px bg-[#e5e5e5] mx-5 my-2" />
+
+            <p className="px-5 py-2 text-[11px] font-bold text-[#a3a3a3] uppercase tracking-wider">Manajemen Data</p>
+            
+            <button
+              onClick={() => onNavigate('classes')}
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
+            >
+              <Users className="w-5 h-5 text-[#737373]" />
+              <span className="text-[#0a0a0a] text-[15px] font-medium">Data Kelas</span>
+            </button>
+            
+            <button
+              onClick={() => onNavigate('students')}
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
+            >
+              <Users className="w-5 h-5 text-[#737373]" />
+              <span className="text-[#0a0a0a] text-[15px] font-medium">Data Siswa</span>
+            </button>
+            <button
+              onClick={() => onNavigate('schedules')}
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
+            >
+              <Calendar className="w-5 h-5 text-[#737373]" />
+              <span className="text-[#0a0a0a] text-[15px] font-medium">Jadwal Pelajaran</span>
             </button>
 
             <div className="h-px bg-[#e5e5e5] mx-5 my-2" />

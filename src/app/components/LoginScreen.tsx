@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { Eye, EyeOff, User, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import logoImg from "../../imports/Gemini_Generated_Image_xg3fxbxg3fxbxg3f.png";
+import logoImg from "../../imports/Logo Si-Abas.png";
+
+import { supabase } from '@/lib/supabase';
 
 interface LoginScreenProps {
   onLogin: () => void;
 }
-
-// Kredensial demo
-const DEMO_USERNAME = 'ahmad.dahlan';
-const DEMO_PASSWORD = 'siabas2026';
 
 export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [username, setUsername] = useState('');
@@ -19,27 +17,30 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<'username' | 'password' | null>(null);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
     if (!username.trim() || !password.trim()) {
-      setError('Username dan password tidak boleh kosong.');
+      setError('Email dan password tidak boleh kosong.');
       return;
     }
-    if (username !== DEMO_USERNAME || password !== DEMO_PASSWORD) {
-      setError('Username atau password salah. Silakan coba lagi.');
-      return;
-    }
+    
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      onLogin();
-    }, 1200);
-  };
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+      });
 
-  const handleFillDemo = () => {
-    setUsername(DEMO_USERNAME);
-    setPassword(DEMO_PASSWORD);
-    setError('');
+      if (authError) {
+        setError('Login gagal: ' + authError.message);
+      } else {
+        onLogin();
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan koneksi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -88,9 +89,9 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           </div>
         )}
 
-        {/* Username Field */}
+        {/* Email Field */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[#0a0a0a] text-[13px] font-medium">Username</label>
+          <label className="text-[#0a0a0a] text-[13px] font-medium">Email Guru</label>
           <div
             className={`flex items-center gap-3 border rounded-xl px-4 py-3 transition-colors ${
               focusedField === 'username'
@@ -100,14 +101,14 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           >
             <User className={`w-5 h-5 flex-shrink-0 ${focusedField === 'username' ? 'text-[#16a34a]' : 'text-[#a3a3a3]'}`} />
             <input
-              type="text"
+              type="email"
               value={username}
               onChange={(e) => { setUsername(e.target.value); setError(''); }}
               onFocus={() => setFocusedField('username')}
               onBlur={() => setFocusedField(null)}
-              placeholder="Masukkan username"
+              placeholder="nama@sekolah.id"
               className="flex-1 bg-transparent text-[#0a0a0a] text-[14px] outline-none placeholder-[#a3a3a3]"
-              autoComplete="username"
+              autoComplete="email"
             />
           </div>
         </div>
@@ -169,23 +170,14 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           )}
         </button>
 
-        {/* Demo Hint Card */}
+        {/* Info Card */}
         <div className="bg-[#f0fdf4] border border-[#86efac] rounded-xl px-4 py-3">
-          <p className="text-[#15803d] text-[12px] font-semibold mb-1.5">Akun Demo</p>
+          <p className="text-[#15803d] text-[12px] font-semibold mb-1.5">Petunjuk Akses</p>
           <div className="flex flex-col gap-0.5">
-            <p className="text-[#166534] text-[12px]">
-              Username: <span className="font-mono font-semibold">ahmad.dahlan</span>
-            </p>
-            <p className="text-[#166534] text-[12px]">
-              Password: <span className="font-mono font-semibold">siabas2026</span>
+            <p className="text-[#166534] text-[12px] leading-relaxed">
+              Gunakan email dan password yang telah didaftarkan oleh Admin Madrasah.
             </p>
           </div>
-          <button
-            onClick={handleFillDemo}
-            className="mt-2 text-[#16a34a] text-[12px] font-semibold underline active:opacity-60"
-          >
-            Isi otomatis →
-          </button>
         </div>
 
         {/* Footer */}
