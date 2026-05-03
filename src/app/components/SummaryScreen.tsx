@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
+import { sendWhatsAppNotification } from '@/lib/whatsapp';
 
 interface SummaryScreenProps {
   onBack: () => void;
@@ -116,15 +117,42 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Simulasi Notifikasi WhatsApp
-      console.log("Mengirim notifikasi WhatsApp ke wali murid...");
+      // 1. Ambil data guru (auth user)
+      const { data: { user } } = await supabase.auth.getUser();
       
-      setTimeout(() => {
-        setIsSubmitting(false);
-        onSubmit();
-      }, 2000);
-    } catch (err) {
-      alert("Gagal mengirim laporan.");
+      // 2. Siapkan data untuk batch insert
+      const attendanceData = students.map(student => ({
+        student_id: student.id,
+        class_id: classId,
+        status: student.status,
+        subject: subjectName,
+        teacher_id: user?.id,
+        date: new Date().toISOString().split('T')[0]
+      }));
+
+      // 3. Simpan ke database (Tabel: attendance)
+      const { error } = await supabase
+        .from('attendance')
+        .insert(attendanceData);
+
+      if (error) throw error;
+
+      // 4. Kirim Notifikasi WhatsApp ke Wali Murid (SRS: 1.7.2 h)
+      const notificationPromises = students.map(student => {
+        if (student.parent_phone) {
+          const message = `[SI-ABAS] Notifikasi Kehadiran:\nAnanda *${student.full_name}* berstatus *${student.status.toUpperCase()}* pada mata pelajaran ${subjectName} hari ini.`;
+          return sendWhatsAppNotification(student.parent_phone, message);
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(notificationPromises);
+      
+      setIsSubmitting(false);
+      onSubmit();
+    } catch (err: any) {
+      console.error("Submit Error:", err);
+      alert("Gagal menyimpan laporan: " + (err.message || "Unknown Error"));
       setIsSubmitting(false);
     }
   };

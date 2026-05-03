@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Eye, EyeOff, User, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import logoImg from "../../imports/Logo Si-Abas.png";
+// import logoImg from "../../imports/Logo Si-Abas.png";
+const logoImg = "https://placehold.co/400x400?text=SI-ABAS";
 
 import { supabase } from '@/lib/supabase';
 

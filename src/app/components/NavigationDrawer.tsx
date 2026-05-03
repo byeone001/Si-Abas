@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { User, Home, Settings, HelpCircle, LogOut, AlertTriangle, Users, Calendar } from 'lucide-react';
 import { ScreenState } from '@/app/App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import logoImg from "../../imports/Logo Si-Abas.png";
+// import logoImg from "../../imports/Logo Si-Abas.png";
+const logoImg = "https://placehold.co/400x400?text=SI-ABAS";
 
 interface NavigationDrawerProps {
   isOpen: boolean;

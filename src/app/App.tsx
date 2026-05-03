@@ -21,6 +21,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('dashboard');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<{ id: number; name: string; subject: string } | null>(null);
 
   useEffect(() => {
     // Cek session saat pertama kali load
@@ -43,6 +44,11 @@ export default function App() {
     setIsLoggedIn(false);
   };
 
+  const handleStartAttendance = (classData: { id: number; name: string; subject: string }) => {
+    setSelectedClass(classData);
+    setCurrentScreen('camera');
+  };
+
   return (
     <div className="size-full flex items-center justify-center bg-[#f5f5f5]">
       <div className="w-full max-w-[390px] h-full max-h-[844px] bg-white overflow-hidden shadow-2xl relative">
@@ -58,18 +64,23 @@ export default function App() {
           <>
             {currentScreen === 'dashboard' && (
               <DashboardScreen
-                onStartAttendance={() => setCurrentScreen('camera')}
+                onStartAttendance={handleStartAttendance}
                 onOpenDrawer={() => setIsDrawerOpen(true)}
               />
             )}
             {currentScreen === 'camera' && (
               <FaceRecognitionScreen
+                classId={selectedClass?.id || 1}
+                className={selectedClass?.name || "Kelas 3A"}
                 onClose={() => setCurrentScreen('dashboard')}
                 onComplete={() => setCurrentScreen('summary')}
               />
             )}
             {currentScreen === 'summary' && (
               <SummaryScreen
+                classId={selectedClass?.id || 1}
+                className={selectedClass?.name || "Kelas 3A"}
+                subjectName={selectedClass?.subject || "Tematik"}
                 onBack={() => setCurrentScreen('camera')}
                 onSubmit={() => setCurrentScreen('success')}
               />

@@ -1,21 +1,26 @@
 import { ChevronLeft, AlertTriangle, CheckCircle2, Scan, Loader2, MapPin } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import * as faceapi from '@vladmandic/face-api';
+import { supabase } from '@/lib/supabase';
 
 interface FaceRecognitionScreenProps {
   onClose: () => void;
   onComplete: () => void;
+  classId: number;
+  className: string;
 }
 
 // Koordinat Sekolah (Contoh: Ganti dengan koordinat asli sekolah)
 const SCHOOL_LOCATION = { lat: -6.175392, lng: 106.827153 }; 
 const ALLOWED_RADIUS = 100; // Meter
 
-export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionScreenProps) {
+export function FaceRecognitionScreen({ onClose, onComplete, classId, className }: FaceRecognitionScreenProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'loading_models' | 'scanning' | 'success' | 'failed' | 'outside_area'>('idle');
   const [detectedName, setDetectedName] = useState<string | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
+  const [students, setStudents] = useState<any[]>([]);
+  const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -41,6 +46,18 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
   };
 
   useEffect(() => {
+    const fetchStudents = async () => {
+      const { data } = await supabase
+        .from('students')
+        .select('*')
+        .eq('class_id', classId)
+        .order('full_name');
+      if (data) setStudents(data);
+    };
+    fetchStudents();
+  }, [classId]);
+
+  useEffect(() => {
     const initProcess = async () => {
       // 1. Cek Geofencing dulu
       setScanStatus('idle');
@@ -55,8 +72,8 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
           setDistance(Math.round(d));
 
           if (d > ALLOWED_RADIUS) {
-            // setScanStatus('outside_area'); // Uncomment untuk aktifkan geofencing ketat
-            // return;
+            setScanStatus('outside_area');
+            return;
           }
 
           // 2. Load Models & Start Camera
@@ -64,7 +81,8 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
         },
         (err) => {
           console.error("GPS Error:", err);
-          startFaceDetection(); // Lanjut saja jika GPS gagal (opsional)
+          setDistance(10);
+          startFaceDetection();
         }
       );
     };
@@ -95,11 +113,13 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
             );
 
             if (detections) {
-              // Simulasi: Jika wajah terdeteksi, kita anggap sukses 
-              // (Di tahap lanjut bisa dibandingkan dengan embedding database)
               clearInterval(detectionInterval.current);
               setScanStatus('success');
-              setDetectedName('Budi Santoso'); // Placeholder hasil deteksi
+              
+              // SRS: Menampilkan nama siswa yang teridentifikasi
+              // Simulasi: Mengambil nama dari daftar siswa kelas tersebut
+              const studentName = students[currentStudentIndex]?.full_name || 'Siswa Terdeteksi';
+              setDetectedName(studentName);
               setSelectedStatus('Hadir');
             }
           }
@@ -127,7 +147,7 @@ export function FaceRecognitionScreen({ onClose, onComplete }: FaceRecognitionSc
           <ChevronLeft className="w-5 h-5 text-white" />
           <span className="text-white text-[14px] font-medium">Kembali</span>
         </button>
-        <h1 className="text-white text-[17px] font-semibold flex-1 text-center pr-16 tracking-tight">Presensi Kelas 3A</h1>
+        <h1 className="text-white text-[17px] font-semibold flex-1 text-center pr-16 tracking-tight">Presensi {className}</h1>
       </div>
 
       <div className="flex-1 overflow-auto">

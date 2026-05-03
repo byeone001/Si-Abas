@@ -1,0 +1,222 @@
+
+
+Spesifikasi Persyaratan Perangkat Lunak
+untuk
+       Sistem Presensi Siswa SD Islamiyah Magetan Berbasis Face
+Recognition (Model Guru-Centric)
+
+Version 1.0 approved
+
+
+
+Disiapkan Oleh Qolbun Halim Hidayatulloh, Vhemas Dwi Agung P., Muhammad Rifqi
+Iqbal G
+
+
+
+Kelompok 2
+
+
+
+17 April 2026
+
+
+
+
+
+
+Copyright © 1999 by Karl E. Wiegers. Permission is granted to use, modify, and distribute this document.
+
+
+Daftar Isi
+Daftar Isi	ii
+Daftar Gambar	iii
+Daftar Tabel	iv
+1. Pendahuluan	1
+1.1 Latar Belakang	1
+1.2 Tujuan	1
+1.3 Identifikasi Stakeholder	1
+1.4 Ruang Lingkup & Batasan Masalah	2
+1.5 Nama Software	2
+1.6 Analisis Kebutuhan	2
+1.6.1 Functional Requirements	2
+1.6.2 Non-Functional Requirements	3
+1.6.3 Constraints (Batasan)	4
+1.7 Skenario Use Case (Model Guru-Centric)	4
+1.7.1 Use Case Diagram	4
+1.7.2 Deskripsi Skenario Utama	5
+1.7.3 Activity Diagram	5
+2. Deskripsi Keseluruhan	6
+2.1 Kelas dan Karakteristik Pengguna	6
+3. Persyaratan Antarmuka Eksternal	7
+3.1 Antarmuka Perangkat Keras (Hardware Interfaces)	7
+3.2 Antarmuka Perangkat Lunak (Software Interfaces)	7
+3.3 Antarmuka Komunikasi (Communications Interfaces)	7
+4. Arsitektur Perangkat Lunak	7
+5. Model Data	8
+6. Model Data	10
+
+
+
+
+Daftar Gambar
+
+Gambar 1. 1. Use Case Diagram	4
+Gambar 1. 2. Activity Diagram	5
+Gambar 4. 1. Software Architecture	8
+Gambar 5. 1. Class Diagram	9
+
+Daftar Tabel
+Tabel 1.1. Identifikasi Stakeholder	1
+Tabel 1.2. Functional Requirements	2
+Tabel 1.3. Non-Functional Requirements	3
+Tabel 1.4. Constraints (Batasan)	4
+Tabel 2. 1. Kelas dan Karakteristik Pengguna	6
+
+
+1. Pendahuluan
+1.1 Latar Belakang
+   Untuk SD Islamiyah Magetan, efisiensi waktu belajar sangatlah penting. Penggunaan presensi manual biasanya memakan waktu sepuluh hingga lima belas menit pada awal pelajaran dan rentan terhadap kesalahan rekapitulasi. Diperlukan solusi di mana guru bertindak sebagai satu-satunya operator yang memverifikasi keberadaan biometrik karena siswa SD tidak diperbolehkan membawa HP. Hal ini menjamin keakuratan data tanpa mengubah peraturan yang melarang siswa membawa perangkat tersebut.
+1.2 Tujuan
+Tujuan dari pengembangan software Si-Abas Islamiyah adalah:
+a. mempercepat proses absensi kelas hingga kurang dari 3 menit untuk 30 siswa.
+b. Pencocokan wajah (face matching) dan geofencing memastikan kehadiran valid
+c. beri tahu orang tua dengan cepat tentang data mereka.
+d. membuat laporan bulanan lebih mudah untuk kebutuhan administrasi sekolah dan rapor.
+1.3 Identifikasi Stakeholder
+   Identifikasi pihak-pihak yang terlibat dilakukan secara komprehensif untuk memastikan seluruh alur kerja terpenuhi:
+Tabel 1.1. Identifikasi Stakeholder
+
+NoStakeholderDeskripsi Peran & Tanggung Jawab
+1.Guru Kelas (Operator)Pemegang otoritas aplikasi mobile. Bertanggung jawab melakukan login, memilih jadwal kelas, melakukan pemindaian wajah siswa, dan mengirimkan laporan akhir sesi.2.SiswaSubjek biometrik. Bertanggung jawab memberikan data wajah awal
+(enrollment) dan melakukan pose wajah saat diminta oleh guru.
+3.
+Wali MuridPenerima informasi. Bertanggung jawab memantau status kehadiran anak melalui notifikasi WhatsApp/Aplikasi untuk memastikan anak sampai di sekolah.
+
+
+4.  Admin AkademikPengelola data master. Bertanggung jawab melakukan input data siswa, pemetaan kelas, jadwal pelajaran, dan penanganan reset akun
+guru.
+5.
+Kepala SekolahPengawas kebijakan. Menggunakan dashboard web untuk memantau performa kehadiran siswa dan kedisiplinan guru dalam melakukan presensi.
+1.4 Ruang Lingkup & Batasan Masalah
+a. Ruang Lingkup: Aplikasi mobile (Android/iOS) untuk Guru, Web Panel untuk Admin/Kepala Sekolah, dan sistem integrasi notifikasi pihak ketiga (WhatsApp Gateway).
+b. Batasan Masalah: Tidak mendukung penggunaan di luar radius 100 meter dari koordinat sekolah, memerlukan koneksi internet stabil (minimal 3Mbps), dan tidak mendukung perangkat dengan kamera di bawah 5MP.
+1.5 Nama Software
+      Si-Abas Islamiyah (Sistem Absensi Biometrik & Geolocation SD Islamiyah Magetan).
+1.6 Analisis Kebutuhan
+1.6.1 Functional Requirements
+Tabel 1.2. Functional Requirements
+
+IDDeskripsi Kebutuhan (Format Sistematis)FR-01Autentikasi Guru: Sistem harus memvalidasi akun guru berdasarkan NIP dan kata sandi yang terdaftar di database sekolah.FR-02Deteksi Lokasi (GPS): Sistem wajib mengunci fitur kamera jika koordinat perangkat Guru berada di luar radius 100 meter dari titik pusat sekolah.FR-03Seleksi Kelas: Sistem harus menampilkan daftar siswa secara otomatis
+berdasarkan jadwal pelajaran yang sedang berlangsung.FR-04Face Recognition: Sistem harus mencocokkan wajah siswa dengan database biometrik dengan Confidence Level minimal 85%.
+
+
+FR-05Liveness Detection: Sistem harus memiliki algoritma untuk mendeteksi kedipan mata atau gerakan kepala guna mencegah pemalsuan menggunakan
+foto/cetakan.FR-06Status Kehadiran: Sistem harus menyediakan pilihan status manual (Hadir, Izin, Sakit, Alpa) jika verifikasi wajah gagal karena faktor teknis.FR-07Notifikasi Instan: Sistem harus mengirimkan notifikasi ke WhatsApp orang tua dalam waktu < 60 detik setelah guru melakukan submit presensi.
+FR-08Penyimpanan Lokal (Buffer): Sistem harus mampu menyimpan data presensi secara lokal jika koneksi internet terputus dan melakukan sinkronisasi otomatis saat internet aktif kembali.FR-09Log Presensi: Sistem harus mencatat timestamp (jam, menit, detik) setiap kali wajah siswa berhasil diverifikasi oleh guru.FR-10Rekapitulasi Otomatis: Sistem harus mampu mengunduh laporan bulanan dalam format .XLSX yang dikelompokkan per kelas dan per mata pelajaran.
+1.6.2 Non-Functional Requirements
+Tabel 1.3. Non-Functional Requirements
+
+IDKategoriDeskripsi Kebutuhan (Dapat Diuji/Terukur)NFR-01PerformanceWaktu identifikasi wajah (pencocokan hingga hasil keluar) tidak boleh lebih dari 2 detik per siswa.NFR-02AvailabilitySistem harus memiliki uptime minimal 99% selama jam operasional sekolah (06.00 - 15.00 WIB).NFR-03SecurityData biometrik harus disimpan dalam bentuk unique hash (bukan
+file gambar) untuk mencegah pencurian identitas.
+NFR-04
+UsabilityAntarmuka aplikasi harus dapat dioperasikan oleh guru dengan maksimal 4 kali ketukan layar untuk menyelesaikan satu sesi kelas.
+NFR-05
+AccuracyTingkat kesalahan deteksi wajah (False Acceptance Rate) harus di bawah 0,5% dalam kondisi pencahayaan kelas standar (300 lux).
+1.6.3 Constraints (Batasan)
+Tabel 1.4. Constraints (Batasan)
+
+IDDeskripsi Batasan TeknisCON-01Hardware: Perangkat guru wajib memiliki sistem operasi minimal Android 9.0
+atau iOS 14.0.CON-02Konektivitas: Sinkronisasi data ke cloud memerlukan bandwidth minimal 3 Mbps per sesi kirim.CON-03Waktu: Proses presensi hanya diizinkan dalam rentang waktu yang ditentukan (misal: 15 menit sebelum hingga 30 menit setelah jam pelajaran dimulai).
+1.7 Skenario Use Case (Model Guru-Centric)
+1.7.1 Use Case Diagram
+Gambar 1. 1. Use Case Diagram
+
+1.7.2 Deskripsi Skenario Utama
+Skenario: Melakukan Presensi Kelas
+a. Guru membuka aplikasi dan login dengan kredensial yang sah.
+b. Sistem melakukan pengecekan GPS; tombol "Mulai Presensi" aktif jika berada di area sekolah.
+c. Guru memilih pembelajaran dan kelas yang akan diajarkan.
+d. Guru mengarahkan siswa satu per satu ke kamera HP.
+e. Sistem mengidentifikasi wajah siswa dan menampilkan nama mereka, bersama dengan centang hijau jika sesuai.
+f. Setelah semua siswa diminta, guru memeriksa kesimpulan. (misal: 28 Hadir, 2 Sakit).
+g. Guru menekan tombol "Kirim Laporan".
+h. Sistem menyimpan data ke server dan mengirimkan pesan WhatsApp ke Wali Murid.
+1.7.3 Activity Diagram
+
+Gambar 1. 2. Activity Diagram
+
+2. Deskripsi Keseluruhan
+2.1 Kelas dan Karakteristik Pengguna
+Hanya ada lima Pengguna yang akan berinteraksi dengan sistem “Si-Abas” :
+1. Admin Akademik
+2. Guru
+3. Kepala Sekolah
+4. Wali Murid
+5. Siswa
+Tabel 2. 1. Kelas dan Karakteristik Pengguna
+
+NoPenggunaKarakteristik Pengguna1.Admin AkademikPengguna dengan tingkat akses lebih tinggi yang menangani manajemen data Salah satu atributnya adalah keahlian teknologi yang lebih tinggi. Dia dapat mengelola data dasar siswa dan melakukan pendaftaran biometrik awal—atau
+pendaftaran siswa—ke dalam sistem.2.GuruSalah satu pengguna utama yang mengelola aplikasi di lapangan. Memahami teknik pengambilan gambar (foto), menguasai penggunaan aplikasi berbasis internet, dan mampu menggunakan smartphone dengan baik adalah kualitas yang diharapkan dari guru. Guru bertanggung jawab sepenuhnya atas bagaimana sesi presensi berlangsung di
+kelas.3.Kepala Sekolahbertindak sebagai pengawas Untuk evaluasi kehadiran, kepala sekolah hanya memerlukan pemahaman dasar untuk membaca ringkasan data, grafik, dan laporan akhir yang ada
+di dashboard pengawasan.4.Wali Muridpihak eksternal yang bersifat pasif, wali murid cukup menggunakan aplikasi WhatsApp yang aktif untuk menerima pesan notifikasi otomatis tentang kehadiran anak-
+anak mereka.5.SiswaSubjek biometrik. Bertanggung jawab untuk memberikan data wajah awal (pendaftaran) dan mengambil pose wajah
+jika diminta oleh guru.
+3. Persyaratan Antarmuka Eksternal
+3.1 Antarmuka Perangkat Keras (Hardware Interfaces)
+     Untuk menjamin akurasi fitur pemindaian wajah dan validasi lokasi, perangkat yang digunakan harus memenuhi spesifikasi berikut:
+1. Modul Kamera: Perangkat harus memiliki kamera dengan resolusi minimal 5 Megapiksel yang dapat menangkap detail wajah dengan jelas untuk kebutuhan pemindaian wajah dan deteksi keberadaan.
+2. Sensor Geofencing (GPS): Perangkat harus memiliki sensor GPS yang mampu memberikan data koordinat presisi agar sistem dapat mengunci fitur presensi hanya jika pengguna berada dalam radius 100 meter dari titik sekolah.
+
+3.2 Antarmuka Perangkat Lunak (Software Interfaces)
+      Sistem Si-Abas dirancang untuk beroperasi dengan dukungan perangkat lunak pihak ketiga:
+1. Sistem Operasi: Aplikasi berjalan secara optimal pada perangkat dengan basis Android (minimal versi 9.0) atau iOS (minimal versi 14.0).
+2. Layanan Notifikasi (WhatsApp Gateway): Sistem terintegrasi dengan layanan API pihak ketiga (seperti Fonnte atau Twilio) untuk menjembatani pengiriman data kehadiran menjadi pesan teks instan ke wali murid.
+3. Basis Data: Relasional (SQL/MySQL) untuk integritas data kredensial yang ketat.
+
+
+3.3 Antarmuka Komunikasi (Communications Interfaces)
+1. Keamanan Data (HTTPS): Protokol HTTPS diperlukan untuk komunikasi data antara aplikasi di ponsel guru dan server pusat. Hal ini dilakukan untuk menghindari penyadapan data biometrik yang sensitif
+2. Konektivitas: Agar proses pengenalan wajah tidak mengalami latensi atau latensi, diperlukan jaringan internet (4G atau Wi-Fi) dengan kecepatan stabil minimal 3 Mbps.
+4. Arsitektur Perangkat Lunak
+      Berikut adalah representasi visual mengenai bagaimana aplikasi mobile guru berkomunikasi dengan server pusat dan layanan WhatsApp Gateway untuk menghasilkan sistem presensi yang utuh.
+
+
+
+Gambar 4. 1. Software Architecture
+5. Model Data
+      Class Diagram di bawah ini menjelaskan struktur data dan bagaimana entitas seperti Guru, Siswa, dan Jadwal saling terelasi di dalam sistem database Si-Abas.
+
+
+
+Gambar 5. 1. Class Diagram
+
+6. Desain UI/UX (User Interface/User Experience)
+
+Antarmuka pertama sekaligus gerbang keamanan (autentikasi) untuk memvalidasi identitas Guru sebelum memberikan hak akses menuju dasbor utama.Pusat kendali operasional guru pasca- autentikasi. Menampilkan informasi harian esensial: status lokasi (geofencing), kalender navigasi, dan jadwal mengajar
+untuk akses cepat ke fitur presensi.Halaman bagi pengguna untuk menyesuaikan preferensi aplikasi, mencakup pengaturan notifikasi, tampilan visual, keamanan akun, dan izin sistem.Jendela dialog (pop-up) yang muncul saat pengguna menekan tombol "Keluar".
+Berfungsi sebagai lapisan keamanan untuk mencegah pengguna keluar dari aplikasi secara tidak sengaja sebelum memastikan data presensi tersimpan.Antarmuka pemindaian biometrik untuk memverifikasi kehadiran guru dan siswa.Halaman ini menampilkan daftar seluruh siswa pada kelas terpilih untuk ditinjau
+
+Fitur ini menggunakan deteksi wajah berbasis kamera untuk memastikan validitas presensi secara real-time.ulang status kehadirannya setelah proses pemindaian wajah atau input manual selesai dilakukan.Antarmuka umpan balik (feedback) visual yang muncul secara otomatis setelah pengguna berhasil mengirimkan laporan presensi. Berfungsi untuk memberikan kepastian bahwa data telah diterima dan
+disimpan oleh server.Antarmuka yang menampilkan informasi data diri guru secara mendetail. Halaman ini berfungsi sebagai pusat informasi akun dan akses untuk memperbarui kredensial keamanan.Antarmuka untuk mengelola preferensi operasional	aplikasi,	meliputi	kendaliFasilitas dukungan bagi pengguna untuk mencari	solusi	teknis,	panduan
+
+notifikasi, personalisasi	tampilan, serta konfigurasi akses perangkat.penggunaan aplikasi, serta akses komunikasi langsung dengan tim teknis atau admin.Komponen dalam menu Bantuan yang menyediakan jawaban instan atas kendala atau pertanyaan yang sering muncul. Dirancang untuk mengurangi beban kerja tim pendukung (support) dengan memberikan solusi mandiri bagi pengguna.Fasilitas dukungan bagi pengguna untuk mencari solusi teknis, panduan penggunaan aplikasi, serta akses komunikasi langsung dengan tim teknis atau admin.Komponen dalam menu Bantuan yang menyediakan jawaban instan atas kendalaKomponen dalam menu Bantuan yang menyediakan jawaban instan atas kendala
+
+atau pertanyaan yang sering muncul. Dirancang untuk mengurangi beban kerja tim pendukung (support) dengan memberikan solusi mandiri bagi pengguna.atau pertanyaan yang sering muncul. Dirancang untuk mengurangi beban kerja tim pendukung (support) dengan memberikan solusi mandiri bagi pengguna.Komponen visual utama berbentuk kartu (card) yang mengelompokkan berbagai opsi konfigurasi menjadi satu kesatuan rapi. Berfungsi untuk menjaga struktur tata letak aplikasi agar tetap bersih dan memudahkan navigasi mata pengguna.
+
+    Prototipe ini berfungsi sebagai acuan visual dan fungsional bagi pengembang untuk memahami alur kerja (workflow), transisi antar-halaman, dan detail komponen antarmuka.
+Detail Akses
+
+KomponenKeteranganPlatform DesainFigmaTautan Akseshttps://skit-number-71359909.figma.site/
+Panduan Penggunaan
+* Interaktivitas: Klik pada tombol atau elemen menu untuk melihat transisi dan animasi perpindahan layar.
+* Akurasi	Visual:	Pengembang	diharapkan	mengikuti	spesifikasi	warna,	jarak (padding/margin), dan jenis huruf (typography) yang tertera pada dokumen desain tersebut.
+* Alur Utama: Prototipe mencakup alur login, proses pemindaian wajah, hingga finalisasi laporan presensi.
+
+
+
+
+
+
+
+
