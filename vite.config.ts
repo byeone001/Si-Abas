@@ -42,14 +42,16 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'https://placehold.co/192x192?text=SI-ABAS',
+            src: '/icon-512.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
-            src: 'https://placehold.co/512x512?text=SI-ABAS',
+            src: '/icon-512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }
