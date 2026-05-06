@@ -12,26 +12,51 @@ import { HelpScreen } from './components/HelpScreen';
 import { StudentManagementScreen } from './components/StudentManagementScreen';
 import { ScheduleManagementScreen } from './components/ScheduleManagementScreen';
 import { ClassManagementScreen } from './components/ClassManagementScreen';
+import { AttendanceHistoryScreen } from './components/AttendanceHistoryScreen';
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-export type ScreenState = 'dashboard' | 'camera' | 'summary' | 'profile' | 'success' | 'settings' | 'help' | 'students' | 'schedules' | 'classes';
+export type ScreenState = 'dashboard' | 'camera' | 'summary' | 'profile' | 'success' | 'settings' | 'help' | 'students' | 'schedules' | 'classes' | 'history';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'guru'>('guru'); // Default guru
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('dashboard');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<{ id: number; name: string; subject: string } | null>(null);
+  const [presentStudentIds, setPresentStudentIds] = useState<number[]>([]);
 
   useEffect(() => {
+    const fetchRole = async (userId: string) => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single();
+        if (data?.role) setUserRole(data.role);
+      } catch (err) {
+        console.error('Error fetching role:', err);
+      }
+    };
+
     // Cek session saat pertama kali load
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setIsLoggedIn(true);
+      if (session) {
+        setIsLoggedIn(true);
+        fetchRole(session.user.id);
+      }
     });
 
     // Listen perubahan auth (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
+      if (session) {
+        setIsLoggedIn(true);
+        fetchRole(session.user.id);
+      } else {
+        setIsLoggedIn(false);
+        setUserRole('guru');
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -46,6 +71,7 @@ export default function App() {
 
   const handleStartAttendance = (classData: { id: number; name: string; subject: string }) => {
     setSelectedClass(classData);
+    setPresentStudentIds([]); // Reset
     setCurrentScreen('camera');
   };
 
@@ -64,6 +90,7 @@ export default function App() {
           <>
             {currentScreen === 'dashboard' && (
               <DashboardScreen
+                userRole={userRole}
                 onStartAttendance={handleStartAttendance}
                 onOpenDrawer={() => setIsDrawerOpen(true)}
               />
@@ -73,7 +100,10 @@ export default function App() {
                 classId={selectedClass?.id || 1}
                 className={selectedClass?.name || "Kelas 3A"}
                 onClose={() => setCurrentScreen('dashboard')}
-                onComplete={() => setCurrentScreen('summary')}
+                onComplete={(ids: number[]) => {
+                  setPresentStudentIds(ids);
+                  setCurrentScreen('summary');
+                }}
               />
             )}
             {currentScreen === 'summary' && (
@@ -81,12 +111,13 @@ export default function App() {
                 classId={selectedClass?.id || 1}
                 className={selectedClass?.name || "Kelas 3A"}
                 subjectName={selectedClass?.subject || "Tematik"}
+                presentStudentIds={presentStudentIds}
                 onBack={() => setCurrentScreen('camera')}
                 onSubmit={() => setCurrentScreen('success')}
               />
             )}
             {currentScreen === 'profile' && (
-              <TeacherProfileScreen onBack={() => setCurrentScreen('dashboard')} />
+              <TeacherProfileScreen userRole={userRole} onBack={() => setCurrentScreen('dashboard')} />
             )}
             {currentScreen === 'success' && (
               <SuccessScreen onHome={() => setCurrentScreen('dashboard')} />
@@ -97,19 +128,23 @@ export default function App() {
             {currentScreen === 'help' && (
               <HelpScreen onBack={() => setCurrentScreen('dashboard')} />
             )}
-            {currentScreen === 'students' && (
+            {currentScreen === 'students' && userRole === 'admin' && (
               <StudentManagementScreen onBack={() => setCurrentScreen('dashboard')} />
             )}
-            {currentScreen === 'schedules' && (
+            {currentScreen === 'schedules' && userRole === 'admin' && (
               <ScheduleManagementScreen onBack={() => setCurrentScreen('dashboard')} />
             )}
-            {currentScreen === 'classes' && (
+            {currentScreen === 'classes' && userRole === 'admin' && (
               <ClassManagementScreen onBack={() => setCurrentScreen('dashboard')} />
+            )}
+            {currentScreen === 'history' && (
+              <AttendanceHistoryScreen onBack={() => setCurrentScreen('dashboard')} />
             )}
 
             {/* Overlay Navigation Drawer */}
             <NavigationDrawer
               isOpen={isDrawerOpen}
+              userRole={userRole}
               onClose={() => setIsDrawerOpen(false)}
               onNavigate={(screen) => {
                 setCurrentScreen(screen);

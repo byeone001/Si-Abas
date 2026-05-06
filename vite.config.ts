@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 
+import { VitePWA } from 'vite-plugin-pwa'
+
 function figmaAssetResolver() {
   return {
     name: 'figma-asset-resolver',
@@ -23,6 +25,32 @@ export default defineConfig({
     // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true
+      },
+      manifest: {
+        name: 'SI-ABAS Islamiyah',
+        short_name: 'SI-ABAS',
+        description: 'Sistem Absensi Madrasah',
+        theme_color: '#16a34a',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          {
+            src: 'https://placehold.co/192x192?text=SI-ABAS',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'https://placehold.co/512x512?text=SI-ABAS',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      }
+    }),
   ],
   resolve: {
     alias: {

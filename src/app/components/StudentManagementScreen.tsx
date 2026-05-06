@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Plus, Search, User, Trash2, Edit2, Loader2, Save, X } from 'lucide-react';
+import { ChevronLeft, Plus, Search, User, Trash2, Edit2, Loader2, Save, X, ScanFace, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { FaceRegistrationScreen } from './FaceRegistrationScreen';
 
 interface StudentManagementScreenProps {
   onBack: () => void;
@@ -20,6 +21,9 @@ export function StudentManagementScreen({ onBack }: StudentManagementScreenProps
     full_name: '',
     class_id: ''
   });
+
+  // State for Face Registration
+  const [registeringStudent, setRegisteringStudent] = useState<{ id: number; full_name: string } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -127,7 +131,19 @@ export function StudentManagementScreen({ onBack }: StudentManagementScreenProps
   );
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-white relative">
+      {/* Jika sedang merekam wajah, tampilkan layarnya secara penuh (overlay) */}
+      {registeringStudent && (
+        <FaceRegistrationScreen
+          student={registeringStudent}
+          onClose={() => setRegisteringStudent(null)}
+          onSuccess={() => {
+            setRegisteringStudent(null);
+            fetchData(); // Refresh data untuk melihat icon centang hijau
+          }}
+        />
+      )}
+
       {/* Top Bar */}
       <div className="bg-[#16a34a] px-2 py-3 flex items-center gap-2 flex-shrink-0">
         <button
@@ -172,17 +188,32 @@ export function StudentManagementScreen({ onBack }: StudentManagementScreenProps
         ) : filteredStudents.length > 0 ? (
           <div className="space-y-3 mt-2">
             {filteredStudents.map((student) => (
-              <div key={student.id} className="border border-[#e5e5e5] rounded-xl p-4 bg-white shadow-sm flex items-center justify-between">
+              <div key={student.id} className="border border-[#e5e5e5] rounded-xl p-3 bg-white shadow-sm flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#f0fdf4] flex items-center justify-center">
-                    <User className="w-5 h-5 text-[#16a34a]" />
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-[#f0fdf4] flex items-center justify-center">
+                      <User className="w-5 h-5 text-[#16a34a]" />
+                    </div>
+                    {/* Indikator Jika Sudah Ada Data Wajah */}
+                    {student.face_descriptor && (
+                      <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
+                        <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <h3 className="text-[#0a0a0a] text-[15px] font-semibold">{student.full_name}</h3>
-                    <p className="text-[#737373] text-[12px]">{student.classes?.name || 'Tanpa Kelas'}</p>
+                    <h3 className="text-[#0a0a0a] text-[14px] font-semibold">{student.full_name}</h3>
+                    <p className="text-[#737373] text-[11px]">{student.classes?.name || 'Tanpa Kelas'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
+                  <button 
+                    onClick={() => setRegisteringStudent({ id: student.id, full_name: student.full_name })}
+                    className="p-2 text-[#2563eb] active:bg-[#eff6ff] rounded-lg flex flex-col items-center"
+                    title="Rekam Wajah"
+                  >
+                    <ScanFace className="w-4 h-4" />
+                  </button>
                   <button 
                     onClick={() => handleOpenModal(student)}
                     className="p-2 text-[#737373] active:bg-[#f5f5f5] rounded-lg"

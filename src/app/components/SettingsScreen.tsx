@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ChevronLeft,
   Bell,
@@ -100,17 +100,39 @@ function Divider() {
 }
 
 export function SettingsScreen({ onBack }: SettingsScreenProps) {
-  const [notifAbsensi, setNotifAbsensi] = useState(true);
-  const [notifWA, setNotifWA] = useState(true);
-  const [notifPengingat, setNotifPengingat] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [gpsOtomatis, setGpsOtomatis] = useState(true);
-  const [kameraOtomatis, setKameraOtomatis] = useState(false);
-  const [sinkronOtomatis, setSinkronOtomatis] = useState(true);
+  // Read initial states from localStorage or default
+  const getInitialState = (key: string, defaultValue: boolean) => {
+    const saved = localStorage.getItem(key);
+    return saved !== null ? JSON.parse(saved) : defaultValue;
+  };
+
+  const [notifAbsensi, setNotifAbsensi] = useState(() => getInitialState('notifAbsensi', true));
+  const [notifWA, setNotifWA] = useState(() => getInitialState('notifWA', true));
+  const [notifPengingat, setNotifPengingat] = useState(() => getInitialState('notifPengingat', false));
+  const [darkMode, setDarkMode] = useState(() => getInitialState('darkMode', false));
+  const [gpsOtomatis, setGpsOtomatis] = useState(() => getInitialState('gpsOtomatis', true));
+  const [kameraOtomatis, setKameraOtomatis] = useState(() => getInitialState('kameraOtomatis', false));
+  const [sinkronOtomatis, setSinkronOtomatis] = useState(() => getInitialState('sinkronOtomatis', true));
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const handleToggle = (setter: React.Dispatch<React.SetStateAction<boolean>>, value: boolean, name: string) => {
+  // Apply dark mode immediately
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const handleToggle = (
+    setter: React.Dispatch<React.SetStateAction<boolean>>, 
+    value: boolean, 
+    name: string,
+    storageKey: string
+  ) => {
     setter(value);
+    localStorage.setItem(storageKey, JSON.stringify(value));
+    
     if (value) {
       toast.success(`${name} berhasil diaktifkan`);
     } else {
@@ -129,6 +151,18 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   const handleReset = () => {
     setShowResetConfirm(false);
+    // Hapus semua data settings di local storage
+    ['notifAbsensi', 'notifWA', 'notifPengingat', 'darkMode', 'gpsOtomatis', 'kameraOtomatis', 'sinkronOtomatis'].forEach(k => localStorage.removeItem(k));
+    
+    // Reset state ke default
+    setNotifAbsensi(true);
+    setNotifWA(true);
+    setNotifPengingat(false);
+    setDarkMode(false);
+    setGpsOtomatis(true);
+    setKameraOtomatis(false);
+    setSinkronOtomatis(true);
+    
     toast.error('Data aplikasi berhasil direset ke pengaturan awal');
   };
 
@@ -159,7 +193,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             label="Notifikasi Presensi"
             sublabel="Pemberitahuan saat presensi berhasil"
             rightEl={
-              <ToggleSwitch enabled={notifAbsensi} onToggle={() => handleToggle(setNotifAbsensi, !notifAbsensi, 'Notifikasi Presensi')} />
+              <ToggleSwitch enabled={notifAbsensi} onToggle={() => handleToggle(setNotifAbsensi, !notifAbsensi, 'Notifikasi Presensi', 'notifAbsensi')} />
             }
           />
           <Divider />
@@ -168,7 +202,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             label="Kirim ke WhatsApp"
             sublabel="Laporan otomatis ke grup orang tua"
             rightEl={
-              <ToggleSwitch enabled={notifWA} onToggle={() => handleToggle(setNotifWA, !notifWA, 'Kirim ke WhatsApp')} />
+              <ToggleSwitch enabled={notifWA} onToggle={() => handleToggle(setNotifWA, !notifWA, 'Kirim ke WhatsApp', 'notifWA')} />
             }
           />
           <Divider />
@@ -177,7 +211,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             label="Pengingat Jadwal"
             sublabel="Ingatkan 15 menit sebelum kelas"
             rightEl={
-              <ToggleSwitch enabled={notifPengingat} onToggle={() => handleToggle(setNotifPengingat, !notifPengingat, 'Pengingat Jadwal')} />
+              <ToggleSwitch enabled={notifPengingat} onToggle={() => handleToggle(setNotifPengingat, !notifPengingat, 'Pengingat Jadwal', 'notifPengingat')} />
             }
           />
         </div>
@@ -190,7 +224,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             label="Mode Gelap"
             sublabel="Aktifkan tema gelap"
             rightEl={
-              <ToggleSwitch enabled={darkMode} onToggle={() => handleToggle(setDarkMode, !darkMode, 'Mode Gelap')} />
+              <ToggleSwitch enabled={darkMode} onToggle={() => handleToggle(setDarkMode, !darkMode, 'Mode Gelap', 'darkMode')} />
             }
           />
           <Divider />
@@ -210,7 +244,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             label="Akses GPS Otomatis"
             sublabel="Validasi lokasi saat buka aplikasi"
             rightEl={
-              <ToggleSwitch enabled={gpsOtomatis} onToggle={() => handleToggle(setGpsOtomatis, !gpsOtomatis, 'Akses GPS Otomatis')} />
+              <ToggleSwitch enabled={gpsOtomatis} onToggle={() => handleToggle(setGpsOtomatis, !gpsOtomatis, 'Akses GPS Otomatis', 'gpsOtomatis')} />
             }
           />
           <Divider />
@@ -219,7 +253,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             label="Buka Kamera Otomatis"
             sublabel="Langsung ke kamera saat presensi"
             rightEl={
-              <ToggleSwitch enabled={kameraOtomatis} onToggle={() => handleToggle(setKameraOtomatis, !kameraOtomatis, 'Buka Kamera Otomatis')} />
+              <ToggleSwitch enabled={kameraOtomatis} onToggle={() => handleToggle(setKameraOtomatis, !kameraOtomatis, 'Buka Kamera Otomatis', 'kameraOtomatis')} />
             }
           />
         </div>
@@ -232,7 +266,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             label="Sinkronisasi Otomatis"
             sublabel="Upload data saat terhubung Wi-Fi"
             rightEl={
-              <ToggleSwitch enabled={sinkronOtomatis} onToggle={() => handleToggle(setSinkronOtomatis, !sinkronOtomatis, 'Sinkronisasi Otomatis')} />
+              <ToggleSwitch enabled={sinkronOtomatis} onToggle={() => handleToggle(setSinkronOtomatis, !sinkronOtomatis, 'Sinkronisasi Otomatis', 'sinkronOtomatis')} />
             }
           />
           <Divider />

@@ -12,9 +12,10 @@ interface SummaryScreenProps {
   classId?: number;
   className?: string;
   subjectName?: string;
+  presentStudentIds?: number[];
 }
 
-export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kelas 3A", subjectName = "Tematik" }: SummaryScreenProps) {
+export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kelas 3A", subjectName = "Tematik", presentStudentIds = [] }: SummaryScreenProps) {
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,14 +31,17 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
           .order('full_name');
         
         if (data && data.length > 0) {
-          setStudents(data.map(s => ({ ...s, status: 'hadir' })));
+          setStudents(data.map(s => ({ 
+            ...s, 
+            status: presentStudentIds.includes(s.id) ? 'hadir' : 'alpa' 
+          })));
         } else {
           // Fallback dummy data jika database kosong
           const dummy = [
-            { id: 1, full_name: 'Andi Wijaya', status: 'hadir' },
-            { id: 2, full_name: 'Budi Santoso', status: 'hadir' },
-            { id: 3, full_name: 'Citra Dewi', status: 'hadir' },
-            { id: 4, full_name: 'Dian Pratama', status: 'sakit' },
+            { id: 1, full_name: 'Andi Wijaya', status: presentStudentIds.includes(1) ? 'hadir' : 'alpa' },
+            { id: 2, full_name: 'Budi Santoso', status: presentStudentIds.includes(2) ? 'hadir' : 'alpa' },
+            { id: 3, full_name: 'Citra Dewi', status: presentStudentIds.includes(3) ? 'hadir' : 'alpa' },
+            { id: 4, full_name: 'Dian Pratama', status: presentStudentIds.includes(4) ? 'hadir' : 'alpa' },
           ];
           setStudents(dummy);
         }
@@ -48,7 +52,7 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
       }
     };
     fetchStudents();
-  }, [classId]);
+  }, [classId, presentStudentIds]);
 
   const summary = {
     hadir: students.filter((s) => s.status === 'hadir').length,
@@ -146,7 +150,7 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
         return Promise.resolve();
       });
 
-      await Promise.all(notificationPromises);
+      await Promise.allSettled(notificationPromises);
       
       setIsSubmitting(false);
       onSubmit();

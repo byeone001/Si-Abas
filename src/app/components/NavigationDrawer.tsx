@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Home, Settings, HelpCircle, LogOut, AlertTriangle, Users, Calendar } from 'lucide-react';
+import { User, Home, Settings, HelpCircle, LogOut, AlertTriangle, Users, Calendar, FileText } from 'lucide-react';
 import { ScreenState } from '@/app/App';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 // import logoImg from "../../imports/Logo Si-Abas.png";
@@ -7,12 +7,13 @@ const logoImg = "https://placehold.co/400x400?text=SI-ABAS";
 
 interface NavigationDrawerProps {
   isOpen: boolean;
+  userRole: 'admin' | 'guru';
   onClose: () => void;
   onNavigate: (screen: ScreenState) => void;
   onLogout: () => void;
 }
 
-export function NavigationDrawer({ isOpen, onClose, onNavigate, onLogout }: NavigationDrawerProps) {
+export function NavigationDrawer({ isOpen, userRole, onClose, onNavigate, onLogout }: NavigationDrawerProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogoutConfirm = () => {
@@ -58,15 +59,17 @@ export function NavigationDrawer({ isOpen, onClose, onNavigate, onLogout }: Navi
             <div className="w-12 h-12 rounded-full border-2 border-white/40 overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0">
               <ImageWithFallback
                 src="https://images.unsplash.com/photo-1729821728830-068bbff90645?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRvbmVzaWFuJTIwbWFsZSUyMHRlYWNoZXIlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NzYwNjQ4MzB8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-                alt="Teacher Profile"
+                alt="Profile"
                 className="w-full h-full object-cover"
                 fallback={<User className="w-6 h-6 text-white" />}
               />
             </div>
             <div>
-              <h2 className="text-white text-[15px] font-semibold leading-tight">Ahmad Dahlan, S.Pd</h2>
+              <h2 className="text-white text-[15px] font-semibold leading-tight">
+                {userRole === 'admin' ? 'Administrator' : 'Ahmad Dahlan, S.Pd'}
+              </h2>
               <p className="text-[#dcfce7] text-[12px] mt-0.5">1980123456789</p>
-              <p className="text-[#bbf7d0] text-[11px] mt-0.5">Guru Kelas</p>
+              <p className="text-[#bbf7d0] text-[11px] mt-0.5 capitalize">{userRole === 'admin' ? 'Admin Sekolah' : 'Guru Kelas'}</p>
             </div>
           </div>
         </div>
@@ -82,6 +85,13 @@ export function NavigationDrawer({ isOpen, onClose, onNavigate, onLogout }: Navi
               <span className="text-[#0a0a0a] text-[15px] font-medium">Beranda</span>
             </button>
             <button
+              onClick={() => onNavigate('history')}
+              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
+            >
+              <FileText className="w-5 h-5 text-[#737373]" />
+              <span className="text-[#0a0a0a] text-[15px] font-medium">Laporan Presensi</span>
+            </button>
+            <button
               onClick={() => onNavigate('profile')}
               className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
             >
@@ -89,32 +99,35 @@ export function NavigationDrawer({ isOpen, onClose, onNavigate, onLogout }: Navi
               <span className="text-[#0a0a0a] text-[15px] font-medium">Profil Saya</span>
             </button>
 
-            <div className="h-px bg-[#e5e5e5] mx-5 my-2" />
-
-            <p className="px-5 py-2 text-[11px] font-bold text-[#a3a3a3] uppercase tracking-wider">Manajemen Data</p>
-            
-            <button
-              onClick={() => onNavigate('classes')}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
-            >
-              <Users className="w-5 h-5 text-[#737373]" />
-              <span className="text-[#0a0a0a] text-[15px] font-medium">Data Kelas</span>
-            </button>
-            
-            <button
-              onClick={() => onNavigate('students')}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
-            >
-              <Users className="w-5 h-5 text-[#737373]" />
-              <span className="text-[#0a0a0a] text-[15px] font-medium">Data Siswa</span>
-            </button>
-            <button
-              onClick={() => onNavigate('schedules')}
-              className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
-            >
-              <Calendar className="w-5 h-5 text-[#737373]" />
-              <span className="text-[#0a0a0a] text-[15px] font-medium">Jadwal Pelajaran</span>
-            </button>
+            {userRole === 'admin' && (
+              <>
+                <div className="h-px bg-[#e5e5e5] mx-5 my-2" />
+                <p className="px-5 py-2 text-[11px] font-bold text-[#a3a3a3] uppercase tracking-wider">Manajemen Data</p>
+                
+                <button
+                  onClick={() => onNavigate('classes')}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
+                >
+                  <Users className="w-5 h-5 text-[#737373]" />
+                  <span className="text-[#0a0a0a] text-[15px] font-medium">Data Kelas</span>
+                </button>
+                
+                <button
+                  onClick={() => onNavigate('students')}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
+                >
+                  <Users className="w-5 h-5 text-[#737373]" />
+                  <span className="text-[#0a0a0a] text-[15px] font-medium">Data Siswa</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('schedules')}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f0fdf4] active:bg-[#dcfce7] transition-colors"
+                >
+                  <Calendar className="w-5 h-5 text-[#737373]" />
+                  <span className="text-[#0a0a0a] text-[15px] font-medium">Jadwal Pelajaran</span>
+                </button>
+              </>
+            )}
 
             <div className="h-px bg-[#e5e5e5] mx-5 my-2" />
 
