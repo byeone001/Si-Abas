@@ -30,6 +30,9 @@ export default defineConfig({
       devOptions: {
         enabled: true
       },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // Set limit to 5MB
+      },
       manifest: {
         name: 'SI-ABAS Islamiyah',
         short_name: 'SI-ABAS',
