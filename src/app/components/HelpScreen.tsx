@@ -393,7 +393,7 @@ export function HelpScreen({ onBack }: HelpScreenProps) {
                 <div className="flex-1">
                   <p className="text-[#0a0a0a] text-[14px] font-semibold">Email Dukungan</p>
                   <p className="text-[#737373] text-[12px] mt-0.5">Balasan dalam 1×24 jam</p>
-                  <p className="text-[#d97706] text-[13px] font-medium mt-1">admin@islamiyah.sch.id</p>
+                  <p className="text-[#d97706] text-[13px] font-medium mt-1">admin@siabas.sch.id</p>
                 </div>
                 <button className="w-9 h-9 rounded-lg bg-[#fef3c7] flex items-center justify-center active:bg-[#fde68a]">
                   <ExternalLink className="w-4 h-4 text-[#d97706]" />
