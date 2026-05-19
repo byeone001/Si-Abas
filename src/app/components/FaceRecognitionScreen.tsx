@@ -25,6 +25,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
   const [lastScannedName, setLastScannedName] = useState<string | null>(null);
   const [livenessVerified, setLivenessVerified] = useState(false);
   const [blinkCount, setBlinkCount] = useState(0);
+  const [enrolledCount, setEnrolledCount] = useState(0);
   
   const [students, setStudents] = useState<any[]>([]);
   
@@ -34,10 +35,12 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
   const blinkCountRef = useRef(0);
   const earBelowRef = useRef(false);
   const livenessVerifiedRef = useRef(false);
+  const lastRecognitionRef = useRef(0); // throttle recognition ke 1x/detik
 
   // Konstanta Liveness Detection
-  const EAR_THRESHOLD = 0.25;
-  const BLINKS_REQUIRED = 2;
+  // EAR 0.30 lebih toleran; blink normal biasanya EAR turun ke 0.10-0.20
+  const EAR_THRESHOLD = 0.30;
+  const BLINKS_REQUIRED = 1; // Cukup 1 kedipan untuk verifikasi
 
   // Hitung jarak Euclidean dua titik landmark
   const euclideanDist = (p1: {x: number; y: number}, p2: {x: number; y: number}) =>
@@ -138,13 +141,17 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
         // Siapkan matcher dari data murid kelas ini yang punya face_descriptor
         let faceMatcher: faceapi.FaceMatcher | null = null;
         const enrolledStudents = students.filter(s => s.face_descriptor);
+        setEnrolledCount(enrolledStudents.length);
+        console.log(`[FaceRecog] Total siswa: ${students.length}, Sudah enroll: ${enrolledStudents.length}`);
         
         if (enrolledStudents.length > 0) {
           const labeledDescriptors = enrolledStudents.map(s => {
             const descriptorArray = new Float32Array(s.face_descriptor);
             return new faceapi.LabeledFaceDescriptors(`${s.id}#${s.full_name}`, [descriptorArray]);
           });
-          faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6); // 0.6 toleransi standar
+          faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.65);
+        } else {
+          console.warn('[FaceRecog] ⚠️ Tidak ada siswa yang sudah di-enroll wajahnya! Gunakan menu Pendaftaran Wajah terlebih dahulu.');
         }
 
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
@@ -152,7 +159,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
         streamRef.current = stream;
 
         setScanStatus('scanning');
-        
+        // Interval 150ms: cukup cepat untuk menangkap blink (100-400ms)
         detectionInterval.current = setInterval(() => {
           if (videoRef.current && videoRef.current.readyState === 4) {
             faceapi.detectSingleFace(
@@ -164,12 +171,13 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
             .then(detection => {
               if (!detection) return;
 
-              // ── LIVENESS DETECTION (EAR Blink) ──
+              // ── LIVENESS DETECTION (EAR Blink, cek setiap 150ms) ──
               if (!livenessVerifiedRef.current) {
                 const pts = detection.landmarks.positions;
                 const leftEye  = [pts[36], pts[37], pts[38], pts[39], pts[40], pts[41]];
                 const rightEye = [pts[42], pts[43], pts[44], pts[45], pts[46], pts[47]];
                 const ear = (calcEAR(leftEye) + calcEAR(rightEye)) / 2;
+                console.debug('[Liveness] EAR:', ear.toFixed(3), '| Threshold:', EAR_THRESHOLD);
 
                 if (ear < EAR_THRESHOLD) {
                   earBelowRef.current = true; // Mata sedang menutup
@@ -178,15 +186,21 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
                   earBelowRef.current = false;
                   blinkCountRef.current += 1;
                   setBlinkCount(blinkCountRef.current);
+                  console.log('[Liveness] Blink terdeteksi! Total:', blinkCountRef.current);
                   if (blinkCountRef.current >= BLINKS_REQUIRED) {
                     livenessVerifiedRef.current = true;
                     setLivenessVerified(true);
+                    console.log('[Liveness] ✅ Liveness VERIFIED!');
                   }
                 }
                 return; // Tahan face recognition sampai liveness lolos
               }
 
-              // ── FACE RECOGNITION (hanya setelah liveness terverifikasi) ──
+              // ── FACE RECOGNITION (throttle 1x/detik agar tidak berat) ──
+              const now = Date.now();
+              if (now - lastRecognitionRef.current < 1000) return;
+              lastRecognitionRef.current = now;
+
               if (faceMatcher) {
                 const match = faceMatcher.findBestMatch(detection.descriptor);
                 if (match.label !== 'unknown') {
@@ -206,7 +220,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
               }
             });
           }
-        }, 1000);
+        }, 150); // 150ms — cukup cepat tangkap blink
 
       } catch (err) {
         console.error("Init Error:", err);
@@ -273,12 +287,21 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
 
         <div className="px-4 pb-4">
           {!livenessVerified && scanStatus === 'scanning' ? (
-            <div className="flex items-center gap-3 bg-[#fffbeb] border border-[#fde68a] rounded-xl px-4 py-3 shadow-sm animate-pulse">
+            <div className="flex items-center gap-3 bg-[#fffbeb] border border-[#fde68a] rounded-xl px-4 py-3 shadow-sm">
               <Eye className="w-8 h-8 text-[#d97706] flex-shrink-0" />
               <div>
                 <p className="text-[#d97706] text-[11px] font-bold uppercase tracking-wider">Verifikasi Keaslian (Liveness)</p>
                 <p className="text-[#0a0a0a] text-[15px] font-bold">Kedipkan mata {BLINKS_REQUIRED - blinkCount}x lagi</p>
                 <p className="text-[#737373] text-[11px]">Untuk memastikan bukan foto/gambar</p>
+              </div>
+            </div>
+          ) : enrolledCount === 0 && scanStatus === 'scanning' ? (
+            <div className="flex items-center gap-3 bg-[#fef2f2] border border-[#fca5a5] rounded-xl px-4 py-3 shadow-sm">
+              <AlertTriangle className="w-8 h-8 text-[#dc2626] flex-shrink-0" />
+              <div>
+                <p className="text-[#dc2626] text-[11px] font-bold uppercase tracking-wider">Belum Ada Wajah Terdaftar</p>
+                <p className="text-[#0a0a0a] text-[14px] font-bold">0 dari {students.length} siswa ter-enroll</p>
+                <p className="text-[#737373] text-[11px]">Daftar wajah dulu via menu Siswa</p>
               </div>
             </div>
           ) : lastScannedName ? (
@@ -295,13 +318,13 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
                 <p className="text-[#16a34a] text-[12px] font-bold uppercase tracking-widest mb-1">Status Kamera</p>
                 <p className="text-[#0a0a0a] text-[14px] font-medium flex items-center gap-2">
                   <Scan className="w-4 h-4 text-[#16a34a] animate-pulse" />
-                  Siap Memindai Wajah...
+                  Mengenali wajah...
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[#737373] text-[11px] font-bold uppercase mb-0.5">Siswa Hadir</p>
+                <p className="text-[#737373] text-[11px] font-bold uppercase mb-0.5">Hadir / Enroll</p>
                 <p className="text-[#16a34a] text-[24px] font-black leading-none">
-                  {presentStudents.size}<span className="text-[#a3a3a3] text-[14px] font-medium">/{students.length || 0}</span>
+                  {presentStudents.size}<span className="text-[#a3a3a3] text-[14px] font-medium">/{enrolledCount}</span>
                 </p>
               </div>
             </div>
