@@ -16,8 +16,9 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer, userRole = 'g
   const [distance, setDistance] = useState<number | null>(null);
 
   // Koordinat Sekolah (Sesuai FaceRecognitionScreen)
-  const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 };
-  const ALLOWED_RADIUS = 2000; // Meter
+  // const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 };
+  const SCHOOL_LOCATION = { lat: -7.599091, lng: 111.463193 };
+  const ALLOWED_RADIUS = 100; // Meter (sesuai SRS FR-02)
 
   const [schedules, setSchedules] = useState<any[]>([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
@@ -29,9 +30,15 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer, userRole = 'g
   useEffect(() => {
     async function fetchSchedules() {
       try {
+        // Hari ini: Senin=1, Selasa=2, ..., Sabtu=6, Minggu=0 → sesuaikan
+        const jsDay = new Date().getDay(); // 0=Minggu, 1=Senin, ..., 6=Sabtu
+        const todayDayOfWeek = jsDay === 0 ? 7 : jsDay; // Minggu=7, Senin=1 dst
+
         const { data, error } = await supabase
           .from('schedules')
-          .select('*, classes(name)');
+          .select('*, classes(name)')
+          .eq('day_of_week', todayDayOfWeek)
+          .order('start_time');
 
         if (data) {
           const transformed = data.map(s => ({
@@ -83,11 +90,12 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer, userRole = 'g
         );
         setDistance(Math.round(d));
 
-        setDistance(Math.round(d));
-
-        // MEMATIKAN FITUR LOKASI SEMENTARA UNTUK TESTING
-        // Mengabaikan jarak sebenarnya (d <= ALLOWED_RADIUS)
-        setLocationStatus('success');
+        // Validasi geofencing: akses hanya diizinkan dalam radius sekolah
+        if (d <= ALLOWED_RADIUS) {
+          setLocationStatus('success');
+        } else {
+          setLocationStatus('failed');
+        }
       },
       (error) => {
         console.error("Error GPS:", error);
@@ -139,12 +147,12 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer, userRole = 'g
               <p className="text-[#0a0a0a] text-[14px] font-medium">Status Lokasi</p>
               {locationStatus === 'idle' && <p className="text-[#737373] text-[13px] mt-0.5">Lokasi belum dicek</p>}
               {locationStatus === 'checking' && <p className="text-[#eab308] text-[13px] mt-0.5 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Mendapatkan lokasi...</p>}
-              {locationStatus === 'success' && <p className="text-[#16a34a] text-[13px] mt-0.5">Berada di area sekolah ({distance}m)</p>}
+              {locationStatus === 'success' && <p className="text-[#16a34a] text-[13px] mt-0.5">✓ Berada di area sekolah ({distance}m dari pusat)</p>}
               {locationStatus === 'failed' && (
                 <p className="text-[#dc2626] text-[13px] mt-0.5">
                   {distance !== null && distance > ALLOWED_RADIUS
-                    ? `Di luar area sekolah (${distance}m)`
-                    : "Gagal mendapatkan lokasi atau GPS mati"}
+                    ? `Di luar area sekolah (${distance}m, maks ${ALLOWED_RADIUS}m)`
+                    : 'Gagal mendapatkan lokasi atau GPS mati'}
                 </p>
               )}
             </div>
@@ -191,7 +199,9 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer, userRole = 'g
 
         {/* Schedule Section */}
         <div className="px-4 pb-6">
-          <h3 className="text-[#0a0a0a] text-[15px] font-semibold mb-3">Jadwal Hari Ini</h3>
+          <h3 className="text-[#0a0a0a] text-[15px] font-semibold mb-3">
+            Jadwal Hari Ini — {format(currentDate, 'EEEE, d MMMM', { locale: id })}
+          </h3>
           <div className="space-y-3">
             {isLoadingSchedules ? (
               <div className="flex flex-col items-center justify-center py-10 opacity-50">

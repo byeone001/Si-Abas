@@ -79,7 +79,7 @@ export default function App() {
     <div className="size-full flex items-center justify-center bg-[#f5f5f5]">
       <div className="w-full max-w-[390px] h-full max-h-[844px] bg-white overflow-hidden shadow-2xl relative">
         <Toaster position="top-center" richColors />
-        
+
         {/* ── LOGIN ── */}
         {!isLoggedIn && (
           <LoginScreen onLogin={() => setIsLoggedIn(true)} />

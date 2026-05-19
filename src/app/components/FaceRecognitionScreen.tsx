@@ -1,4 +1,4 @@
-import { ChevronLeft, AlertTriangle, CheckCircle2, Scan, Loader2, MapPin } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, CheckCircle2, Scan, Loader2, MapPin, Eye } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import * as faceapi from '@vladmandic/face-api';
 import { supabase } from '@/lib/supabase';
@@ -11,8 +11,9 @@ interface FaceRecognitionScreenProps {
 }
 
 // Koordinat Sekolah (Contoh: Ganti dengan koordinat asli sekolah)
-const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 }; 
-const ALLOWED_RADIUS = 2000; // Meter
+// const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 }; 
+const SCHOOL_LOCATION = { lat: -7.599091, lng: 111.463193 };
+const ALLOWED_RADIUS = 100; // Meter (sesuai SRS FR-02)
 
 export function FaceRecognitionScreen({ onClose, onComplete, classId, className }: FaceRecognitionScreenProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
@@ -22,12 +23,33 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
   // States for Continuous Scanning
   const [presentStudents, setPresentStudents] = useState<Set<number>>(new Set());
   const [lastScannedName, setLastScannedName] = useState<string | null>(null);
+  const [livenessVerified, setLivenessVerified] = useState(false);
+  const [blinkCount, setBlinkCount] = useState(0);
   
   const [students, setStudents] = useState<any[]>([]);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectionInterval = useRef<any>(null);
+  const blinkCountRef = useRef(0);
+  const earBelowRef = useRef(false);
+  const livenessVerifiedRef = useRef(false);
+
+  // Konstanta Liveness Detection
+  const EAR_THRESHOLD = 0.25;
+  const BLINKS_REQUIRED = 2;
+
+  // Hitung jarak Euclidean dua titik landmark
+  const euclideanDist = (p1: {x: number; y: number}, p2: {x: number; y: number}) =>
+    Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+
+  // Eye Aspect Ratio — deteksi kedipan dari 6 titik landmark mata
+  const calcEAR = (eyePts: {x: number; y: number}[]) => {
+    const A = euclideanDist(eyePts[1], eyePts[5]);
+    const B = euclideanDist(eyePts[2], eyePts[4]);
+    const C = euclideanDist(eyePts[0], eyePts[3]);
+    return (A + B) / (2.0 * C);
+  };
 
   const statusButtons = [
     { label: 'Hadir', color: 'border-[#16a34a] text-[#16a34a]' },
@@ -83,13 +105,11 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
           
           setDistance(Math.round(d));
 
-          // MEMATIKAN FITUR LOKASI SEMENTARA UNTUK TESTING
-          /*
+          // Validasi geofencing: blokir akses jika di luar 100m dari sekolah
           if (d > ALLOWED_RADIUS) {
             setScanStatus('outside_area');
             return;
           }
-          */
 
           // 2. Load Models & Start Camera
           await startFaceDetection();
@@ -142,12 +162,36 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
             .withFaceLandmarks()
             .withFaceDescriptor()
             .then(detection => {
-              if (detection && faceMatcher) {
+              if (!detection) return;
+
+              // ── LIVENESS DETECTION (EAR Blink) ──
+              if (!livenessVerifiedRef.current) {
+                const pts = detection.landmarks.positions;
+                const leftEye  = [pts[36], pts[37], pts[38], pts[39], pts[40], pts[41]];
+                const rightEye = [pts[42], pts[43], pts[44], pts[45], pts[46], pts[47]];
+                const ear = (calcEAR(leftEye) + calcEAR(rightEye)) / 2;
+
+                if (ear < EAR_THRESHOLD) {
+                  earBelowRef.current = true; // Mata sedang menutup
+                } else if (earBelowRef.current) {
+                  // Mata baru terbuka kembali = kedipan selesai
+                  earBelowRef.current = false;
+                  blinkCountRef.current += 1;
+                  setBlinkCount(blinkCountRef.current);
+                  if (blinkCountRef.current >= BLINKS_REQUIRED) {
+                    livenessVerifiedRef.current = true;
+                    setLivenessVerified(true);
+                  }
+                }
+                return; // Tahan face recognition sampai liveness lolos
+              }
+
+              // ── FACE RECOGNITION (hanya setelah liveness terverifikasi) ──
+              if (faceMatcher) {
                 const match = faceMatcher.findBestMatch(detection.descriptor);
                 if (match.label !== 'unknown') {
                   const [matchedId, matchedName] = match.label.split('#');
                   const idNum = parseInt(matchedId);
-                  
                   setPresentStudents(prev => {
                     if (!prev.has(idNum)) {
                       const newSet = new Set(prev);
@@ -203,11 +247,12 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
             <div className="relative z-10 w-[75%] aspect-[3.5/5]">
               <div className={`absolute inset-0 border-4 rounded-[50%] transition-all duration-300 ${
                 lastScannedName ? 'border-[#16a34a] shadow-[0_0_30px_rgba(22,163,74,0.5)] scale-105' : 
+                !livenessVerified && scanStatus === 'scanning' ? 'border-[#f59e0b] border-dashed animate-pulse' :
                 scanStatus === 'scanning' ? 'border-white/30 border-dashed animate-pulse' : 'border-transparent'
               }`} />
               <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center">
                 <div className="text-white text-[11px] font-bold uppercase tracking-widest bg-black/60 px-4 py-1.5 rounded-full backdrop-blur-md">
-                  {lastScannedName ? 'Dikenali!' : scanStatus === 'scanning' ? 'Stanby' : ''}
+                  {lastScannedName ? 'Dikenali!' : !livenessVerified && scanStatus === 'scanning' ? `Kedip ${BLINKS_REQUIRED - blinkCount}x` : scanStatus === 'scanning' ? 'Scanning...' : ''}
                 </div>
               </div>
             </div>
@@ -227,7 +272,16 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
         </div>
 
         <div className="px-4 pb-4">
-          {lastScannedName ? (
+          {!livenessVerified && scanStatus === 'scanning' ? (
+            <div className="flex items-center gap-3 bg-[#fffbeb] border border-[#fde68a] rounded-xl px-4 py-3 shadow-sm animate-pulse">
+              <Eye className="w-8 h-8 text-[#d97706] flex-shrink-0" />
+              <div>
+                <p className="text-[#d97706] text-[11px] font-bold uppercase tracking-wider">Verifikasi Keaslian (Liveness)</p>
+                <p className="text-[#0a0a0a] text-[15px] font-bold">Kedipkan mata {BLINKS_REQUIRED - blinkCount}x lagi</p>
+                <p className="text-[#737373] text-[11px]">Untuk memastikan bukan foto/gambar</p>
+              </div>
+            </div>
+          ) : lastScannedName ? (
             <div className="flex items-center gap-3 bg-[#f0fdf4] border border-[#86efac] rounded-xl px-4 py-3 shadow-sm animate-in fade-in zoom-in duration-300">
               <CheckCircle2 className="w-8 h-8 text-[#16a34a]" />
               <div>

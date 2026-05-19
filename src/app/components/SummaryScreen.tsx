@@ -5,6 +5,7 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { sendWhatsAppNotification } from '@/lib/whatsapp';
+import { toast } from 'sonner';
 
 interface SummaryScreenProps {
   onBack: () => void;
@@ -141,16 +142,22 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
 
       if (error) throw error;
 
-      // 4. Kirim Notifikasi WhatsApp ke Wali Murid (SRS: 1.7.2 h)
-      const notificationPromises = students.map(student => {
-        if (student.parent_phone) {
-          const message = `[SI-ABAS] Notifikasi Kehadiran:\nAnanda *${student.full_name}* berstatus *${student.status.toUpperCase()}* pada mata pelajaran ${subjectName} hari ini.`;
-          return sendWhatsAppNotification(student.parent_phone, message);
-        }
-        return Promise.resolve();
+      // 4. Kirim Notifikasi WhatsApp ke Wali Murid yang punya nomor
+      const studentsWithPhone = students.filter(s => s.parent_phone);
+      const notificationPromises = studentsWithPhone.map(student => {
+        const message = `[SI-ABAS] Notifikasi Kehadiran:\nAnanda *${student.full_name}* berstatus *${student.status.toUpperCase()}* pada mata pelajaran ${subjectName} hari ini.`;
+        return sendWhatsAppNotification(student.parent_phone, message);
       });
 
-      await Promise.allSettled(notificationPromises);
+      const waResults = await Promise.allSettled(notificationPromises);
+      const waSuccess = waResults.filter(r => r.status === 'fulfilled').length;
+
+      // Tampilkan feedback ke guru
+      if (studentsWithPhone.length > 0) {
+        toast.success(`✅ Laporan tersimpan! Notifikasi WA: ${waSuccess}/${studentsWithPhone.length} terkirim.`);
+      } else {
+        toast.info('✅ Laporan tersimpan. Tidak ada nomor wali murid yang terdaftar.');
+      }
       
       setIsSubmitting(false);
       onSubmit();

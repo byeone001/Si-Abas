@@ -1,0 +1,669 @@
+DOKUMEN
+QUALITY
+ASSURANCE (QA)
+
+Nama Perangkat Lunak: Si-Abas Islamiyah (Sistem Absensi
+Biometrik & Geolocation)
+Versi Dokumen: 1.1
+Fokus Pengujian: Aplikasi Mobile Android/iOS (Model GuruCentric)
+
+Kelompok 2
+Oleh : Qolbun Halim Hidayatulloh (25051204442), Vhemas Dwi Agung
+Presetyo (25051204313), Muhammad Rifqi Iqbal G (25051204277)
+2026
+i
+
+Pengantar Dokumen
+Dokumen Quality Assurance (QA) ini disusun secara khusus untuk memandu proses
+pengujian aplikasi Si-Abas Islamiyah. Mengingat aplikasi ini mengusung model Guru-Centric
+di mana guru menjadi satu-satunya operator presensi, pengujian akan sangat menitikberatkan
+pada kemudahan penggunaan antarmuka, kecepatan pemrosesan biometrik, dan keandalan
+sistem dalam memvalidasi lokasi. Dokumen ini memastikan bahwa seluruh spesifikasi yang
+tertuang dalam Software Requirements Specification (SRS) dapat diimplementasikan dengan
+baik tanpa kendala teknis di lapangan.
+
+ii
+
+Daftar Isi
+Pengantar Dokumen ............................................................................................................................. ii
+Daftar Isi ............................................................................................................................................... iii
+1.
+
+Test Plan (Rencana Pengujian) .................................................................................................... 1
+1.1 Tujuan Pengujian .................................................................................................................... 1
+1.2 Ruang Lingkup (Scope) .......................................................................................................... 1
+1.3 Lingkungan Pengujian (Test Environment) ............................................................................ 1
+
+2.
+
+Test Case (Skenario Uji) ............................................................................................................... 2
+
+3.
+
+Requirements Traceability Matrix (RTM) ................................................................................. 4
+
+4.
+
+Bug Report (Pelaporan Cacat Sistem) ........................................................................................ 5
+
+iii
+
+1. Test Plan (Rencana Pengujian)
+1.1 Tujuan Pengujian
+Tujuan utama dari pengujian ini adalah untuk memvalidasi bahwa aplikasi SiAbas siap dioperasikan dalam lingkungan sekolah dasar yang dinamis. Secara spesifik,
+pengujian ini bertujuan untuk:
+a.
+
+Memastikan aplikasi mampu mempercepat proses absensi kelas hingga selesai di
+bawah 3 menit untuk total 30 siswa, sehingga tidak memotong waktu efektif
+kegiatan belajar mengajar.
+
+b.
+
+Menguji keandalan algoritma face recognition dan liveness detection guna
+mencegah manipulasi presensi menggunakan foto atau topeng.
+
+c.
+
+Memverifikasi bahwa sistem geofencing bekerja akurat untuk mengunci akses
+aplikasi jika perangkat guru berada di luar radius 100 meter dari koordinat sekolah.
+
+1.2 Ruang Lingkup (Scope)
+Pengujian pada fase ini difokuskan pada aplikasi mobile di sisi Klien (Guru).
+Lingkup pengujian mencakup:
+a.
+
+Modul Autentikasi: Proses login dan perlindungan sesi pengguna.
+
+b.
+
+Modul Validasi Lokasi (GPS): Kinerja sensor geofencing secara real-time.
+
+c.
+
+Modul Pemindaian Biometrik: Kecepatan, akurasi pemindaian wajah, serta
+penanganan saat verifikasi gagal (input manual).
+
+d.
+
+Modul Transmisi Data: Sinkronisasi laporan harian ke server dan trigger
+pengiriman notifikasi otomatis melalui WhatsApp Gateway.
+
+1.3 Lingkungan Pengujian (Test Environment)
+Untuk mendapatkan hasil yang paling mendekati skenario penggunaan nyata,
+pengujian harus dilakukan dengan parameter lingkungan berikut:
+a.
+
+Perangkat Keras: Smartphone dengan kamera beresolusi minimal 5MP dan modul
+GPS yang berfungsi baik.
+
+b.
+
+Sistem Operasi: Diuji pada dua ekosistem, yaitu minimal Android 9.0 dan iOS 14.0.
+
+c.
+
+Koneksi Jaringan: Pengujian dilakukan pada kondisi jaringan stabil minimal 3
+Mbps, serta diuji pula saat koneksi terputus total untuk memvalidasi fitur offline
+mode.
+
+d.
+
+Kondisi Fisik Ruangan: Pencahayaan kelas disimulasikan pada kondisi standar
+(sekitar 300 lux) untuk mengukur False Acceptance Rate.
+1
+
+2. Test Case (Skenario Uji)
+ID
+TC
+
+TC
+-01
+
+TC
+-02
+
+TC
+-03
+
+Deskripsi
+Skenario &
+Tujuan
+Uji
+Autentikasi
+Guru:
+Memastikan
+hanya guru
+terdaftar yang
+dapat
+mengakses
+sistem.
+Uji
+Geofencing
+Area:
+Mencegah
+kecurangan
+presensi dari
+luar sekolah.
+Uji Validitas
+Biometrik:
+Memastikan
+wajah siswa
+dikenali
+dengan akurat.
+
+TC
+-04
+
+Uji AntiPemalsuan
+(Liveness):
+Menguji
+keamanan dari
+manipulasi
+foto.
+
+TC
+-05
+
+Uji Presensi
+Manual:
+Sebagai
+fallback jika
+kamera/wajah
+siswa
+bermasalah.
+
+TC
+-06
+
+Uji Kinerja
+Mode Luring
+(Offline):
+Memastikan
+
+Langkah
+Pengujian
+(Steps)
+
+Expected Result
+(Hasil yang
+Diharapkan)
+
+Status
+Parameter
+Cakupan
+Kritis
+
+Buka aplikasi.
+Masukkan
+NIP dan kata
+sandi.
+3. Tekan
+"Login".
+
+Sistem
+memvalidasi
+kredensial ke
+server, menolak
+input yang salah,
+dan mengarahkan
+guru ke Dasbor
+Utama jika valid.
+
+Keamanan
+data
+kredensial.
+
+1.
+2.
+
+1.
+
+2.
+
+1.
+2.
+
+3.
+
+1.
+
+Bawa
+perangkat
+menjauh lebih
+dari 100 meter
+dari sekolah.
+Coba
+akses
+menu
+pemindaian.
+Buka kelas.
+Arahkan
+kamera
+ke
+wajah siswa
+yang
+telah
+enrollment.
+Jaga
+pencahayaan
+300 lux.
+Arahkan
+kamera pada
+hasil
+cetak
+foto
+wajah
+siswa resolusi
+tinggi.
+
+Sistem mendeteksi
+lokasi di luar radius
+Akurasi GPS
+dan secara otomatis
+& sensor
+mengunci/menonak
+perangkat.
+tifkan tombol
+"Mulai Presensi".
+Sistem
+mencocokkan
+biometrik dengan
+Confidence Level
+85% dan
+merespons dalam
+waktu kurang dari
+2 detik per siswa.
+
+Response
+time < 2
+detik.
+
+Sistem menolak
+verifikasi karena
+Tingkat False
+gagal mendeteksi
+Acceptance
+aktivitas biologis
+Rate.
+(kedipan
+mata/gerak kepala).
+
+Sistem
+mengabaikan
+proses biometrik
+dan menyimpan
+status kehadiran
+manual yang
+dipilih guru dengan
+benar.
+1. Matikan paket Data ditahan di
+data/Wi-Fi.
+penyimpanan lokal
+2. Lakukan
+dengan aman
+presensi
+(Buffer), lalu
+Saat scanning
+gagal,
+pilih
+profil siswa.
+2. Ubah
+status
+(Sakit/Izin/Al
+pa)
+secara
+manual.
+1.
+
+2
+
+Usability
+(maks 4
+ketukan
+layar).
+Integritas
+data tidak
+hilang saat
+offline.
+
+kelancaran
+meski internet
+sekolah putus.
+
+3.
+
+1.
+
+TC
+-07
+
+TC
+-08
+
+TC
+-09
+
+TC
+-10
+
+Uji
+Keterlambatan
+Notifikasi WA:
+2.
+Memastikan
+info cepat
+sampai ke wali
+3.
+murid.
+Uji Seleksi
+Kelas
+Otomatis:
+Memastikan
+sistem memuat
+siswa sesuai
+jadwal
+pelajaran saat
+ini.
+(Memenuhi
+FR-03)
+Uji Log &
+Keamanan
+Data
+Biometrik:
+Memastikan
+pencatatan
+waktu
+(timestamp)
+akurat dan
+data biometrik
+aman.
+(Memenuhi
+FR-09 &
+NFR-03)
+Uji
+Rekapitulasi
+Laporan
+(XLSX):
+Memastikan
+laporan
+bulanan bisa
+diekspor.
+(Memenuhi
+FR-10)
+
+penuh
+satu
+kelas.
+Nyalakan
+internet
+kembali.
+Selesaikan
+sesi presensi
+kelas.
+Tekan tombol
+"Kirim
+Laporan".
+Nyalakan
+stopwatch.
+
+terkirim otomatis
+ke server sesaat
+setelah koneksi
+pulih.
+Pesan rekapitulasi
+kehadiran diterima
+di aplikasi
+WhatsApp wali
+murid dalam durasi
+maksimal di bawah
+60 detik.
+
+Kecepatan
+API
+Gateway.
+
+Buka aplikasi
+pada
+jam
+mengajar.
+2. Masuk
+ke
+menu "Mulai
+Presensi" atau
+pilih jadwal.
+
+Sistem secara
+otomatis
+menampilkan
+daftar nama siswa
+yang sesuai dengan
+jadwal kelas/mapel
+tanpa guru perlu
+mencari manual.
+
+Integrasi
+database
+jadwal.
+
+1. Berhasil
+memindai
+wajah 1 siswa.
+2. Verifikasi
+data log dan
+tipe data
+penyimpanan
+ke server
+(Admin/
+Database)
+
+Sistem mencatat
+presensi beserta
+timestamp (Jam,
+menit, detik). Data
+wajah tersimpan
+sebagai unique
+hash (SHA-256),
+bukan file
+JPG/PNG.
+
+Enkripsi data
+&
+Timestampin
+g.
+
+1. Masuk ke
+Dasbor
+laporan.
+2. Tekan tombol
+unduh laporan
+bulanan/kelas.
+
+Sistem
+menghasilkan dan
+mengunduh file
+berekstensi .XLSX
+yang berisi data
+kehadiran siswa
+dengan format rapi.
+
+Validitas
+format file
+ekspor.
+
+1.
+
+3
+
+3. Requirements Traceability Matrix (RTM)
+ID Kebutuhan
+(SRS)
+FR-01
+
+Deskripsi Ringkas
+Kebutuhan
+Autentikasi via NIP &
+
+Terpetakan ke
+ID Skenario Uji
+TC-01
+
+Password terenkripsi
+Locking system berbasis
+
+FR-02
+
+TC-02
+
+radius GPS 100m
+Seleksi kelas dan daftar
+
+FR-03
+
+TC-08
+
+siswa otomatis
+Pencocokan biometrik
+
+FR-04
+
+TC-03
+
+(Confidence 85%)
+Deteksi Liveness
+
+FR-05
+
+TC-04
+
+(kedipan/gerakan)
+Opsi pengubahan status
+
+FR-06
+
+TC-05
+
+kehadiran manual
+Notifikasi WA real-time (<
+
+FR-07
+
+TC-07
+
+60 detik)
+Local buffer dan
+
+FR-08
+
+TC-06
+
+sinkronisasi otomatis
+Pencatatan timestamp
+
+FR-09
+
+TC-09
+
+presensi akurat
+Unduh laporan rekapitulasi
+
+FR-10
+
+TC-10
+
+.XLSX
+Kecepatan identifikasi per
+
+NFR-01
+
+TC-03
+
+siswa (< 2 detik)
+Uptime sistem 99% (Jam
+
+NFR-02
+
+Pengujian level
+Server (Bukan
+Mobile)
+
+06.00-15.00)
+Penyimpanan biometrik via
+
+NFR-03
+
+TC-09
+
+unique hash
+Efisiensi interaksi UX
+
+NFR-04
+
+TC-05
+
+(maksimal 4 taps)
+False Acceptance Rate <
+
+NFR-05
+
+TC-04
+
+0,5%
+
+4
+
+Status Cakupan
+
+4. Bug Report (Pelaporan Cacat Sistem)
+Contoh Format Laporan Bug Standar:
+Bug ID
+
+: BUG-001
+
+Judul Bug
+
+: Deskripsi singkat masalah, misal: "Tombol Kirim
+Laporan Crash saat Mode Offline"
+
+Dilaporkan Oleh
+
+: Nama Tester
+
+Tanggal Temuan
+
+: DD/MM/YYYY
+
+Environment
+
+: Android 12, iOS 15, Kecepatan Jaringan 5Mbps
+
+Langkah Mereproduksi
+
+: 1. (Langkah 1...)
+
+(Steps to Reproduce):
+
+2.
+
+(Langkah 2...)
+
+Expected Result
+
+: Apa yang seharusnya terjadi
+
+Actual Result
+
+: Apa yang error/terjadi saat ini
+
+Severity
+
+: Low / Medium / High / Critical
+
+(Tingkat Keparahan):
+Lampiran (Attachment)
+
+: Screenshot / Log Cat
+
+5
+
+
