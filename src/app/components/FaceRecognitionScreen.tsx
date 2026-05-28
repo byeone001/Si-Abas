@@ -11,24 +11,24 @@ interface FaceRecognitionScreenProps {
 }
 
 // Koordinat Sekolah (Contoh: Ganti dengan koordinat asli sekolah)
-// const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 }; 
-const SCHOOL_LOCATION = { lat: -7.599091, lng: 111.463193 };
+const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 };
+//const SCHOOL_LOCATION = { lat: -7.693499, lng: 111.333072 };
 const ALLOWED_RADIUS = 100; // Meter (sesuai SRS FR-02)
 
 export function FaceRecognitionScreen({ onClose, onComplete, classId, className }: FaceRecognitionScreenProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'loading_models' | 'starting_camera' | 'scanning' | 'success' | 'failed' | 'outside_area'>('idle');
   const [distance, setDistance] = useState<number | null>(null);
-  
+
   // States for Continuous Scanning
   const [presentStudents, setPresentStudents] = useState<Set<number>>(new Set());
   const [lastScannedName, setLastScannedName] = useState<string | null>(null);
   const [livenessVerified, setLivenessVerified] = useState(false);
   const [blinkCount, setBlinkCount] = useState(0);
   const [enrolledCount, setEnrolledCount] = useState(0);
-  
+
   const [students, setStudents] = useState<any[]>([]);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectionInterval = useRef<any>(null);
@@ -43,11 +43,11 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
   const BLINKS_REQUIRED = 1; // Cukup 1 kedipan untuk verifikasi
 
   // Hitung jarak Euclidean dua titik landmark
-  const euclideanDist = (p1: {x: number; y: number}, p2: {x: number; y: number}) =>
+  const euclideanDist = (p1: { x: number; y: number }, p2: { x: number; y: number }) =>
     Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
 
   // Eye Aspect Ratio — deteksi kedipan dari 6 titik landmark mata
-  const calcEAR = (eyePts: {x: number; y: number}[]) => {
+  const calcEAR = (eyePts: { x: number; y: number }[]) => {
     const A = euclideanDist(eyePts[1], eyePts[5]);
     const B = euclideanDist(eyePts[2], eyePts[4]);
     const C = euclideanDist(eyePts[0], eyePts[3]);
@@ -64,12 +64,12 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
   // Fungsi hitung jarak GPS
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3;
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
@@ -93,19 +93,19 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
         async (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
-          
+
           // Tambahkan console log untuk melihat koordinat yang dibaca oleh browser
           console.log("Lokasi Perangkat (Browser):", lat, lng);
           console.log("Lokasi Target (Rumah/Sekolah):", SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
-          
+
           const d = calculateDistance(
-            lat, 
+            lat,
             lng,
             SCHOOL_LOCATION.lat,
             SCHOOL_LOCATION.lng
           );
           console.log("Jarak Dihitung:", d, "meter");
-          
+
           setDistance(Math.round(d));
 
           // Validasi geofencing: blokir akses jika di luar 100m dari sekolah
@@ -143,7 +143,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
         const enrolledStudents = students.filter(s => s.face_descriptor);
         setEnrolledCount(enrolledStudents.length);
         console.log(`[FaceRecog] Total siswa: ${students.length}, Sudah enroll: ${enrolledStudents.length}`);
-        
+
         if (enrolledStudents.length > 0) {
           const labeledDescriptors = enrolledStudents.map(s => {
             const descriptorArray = new Float32Array(s.face_descriptor);
@@ -163,62 +163,62 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
         detectionInterval.current = setInterval(() => {
           if (videoRef.current && videoRef.current.readyState === 4) {
             faceapi.detectSingleFace(
-              videoRef.current, 
+              videoRef.current,
               new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
             )
-            .withFaceLandmarks()
-            .withFaceDescriptor()
-            .then(detection => {
-              if (!detection) return;
+              .withFaceLandmarks()
+              .withFaceDescriptor()
+              .then(detection => {
+                if (!detection) return;
 
-              // ── LIVENESS DETECTION (EAR Blink, cek setiap 150ms) ──
-              if (!livenessVerifiedRef.current) {
-                const pts = detection.landmarks.positions;
-                const leftEye  = [pts[36], pts[37], pts[38], pts[39], pts[40], pts[41]];
-                const rightEye = [pts[42], pts[43], pts[44], pts[45], pts[46], pts[47]];
-                const ear = (calcEAR(leftEye) + calcEAR(rightEye)) / 2;
-                console.debug('[Liveness] EAR:', ear.toFixed(3), '| Threshold:', EAR_THRESHOLD);
+                // ── LIVENESS DETECTION (EAR Blink, cek setiap 150ms) ──
+                if (!livenessVerifiedRef.current) {
+                  const pts = detection.landmarks.positions;
+                  const leftEye = [pts[36], pts[37], pts[38], pts[39], pts[40], pts[41]];
+                  const rightEye = [pts[42], pts[43], pts[44], pts[45], pts[46], pts[47]];
+                  const ear = (calcEAR(leftEye) + calcEAR(rightEye)) / 2;
+                  console.debug('[Liveness] EAR:', ear.toFixed(3), '| Threshold:', EAR_THRESHOLD);
 
-                if (ear < EAR_THRESHOLD) {
-                  earBelowRef.current = true; // Mata sedang menutup
-                } else if (earBelowRef.current) {
-                  // Mata baru terbuka kembali = kedipan selesai
-                  earBelowRef.current = false;
-                  blinkCountRef.current += 1;
-                  setBlinkCount(blinkCountRef.current);
-                  console.log('[Liveness] Blink terdeteksi! Total:', blinkCountRef.current);
-                  if (blinkCountRef.current >= BLINKS_REQUIRED) {
-                    livenessVerifiedRef.current = true;
-                    setLivenessVerified(true);
-                    console.log('[Liveness] ✅ Liveness VERIFIED!');
+                  if (ear < EAR_THRESHOLD) {
+                    earBelowRef.current = true; // Mata sedang menutup
+                  } else if (earBelowRef.current) {
+                    // Mata baru terbuka kembali = kedipan selesai
+                    earBelowRef.current = false;
+                    blinkCountRef.current += 1;
+                    setBlinkCount(blinkCountRef.current);
+                    console.log('[Liveness] Blink terdeteksi! Total:', blinkCountRef.current);
+                    if (blinkCountRef.current >= BLINKS_REQUIRED) {
+                      livenessVerifiedRef.current = true;
+                      setLivenessVerified(true);
+                      console.log('[Liveness] ✅ Liveness VERIFIED!');
+                    }
+                  }
+                  return; // Tahan face recognition sampai liveness lolos
+                }
+
+                // ── FACE RECOGNITION (throttle 1x/detik agar tidak berat) ──
+                const now = Date.now();
+                if (now - lastRecognitionRef.current < 1000) return;
+                lastRecognitionRef.current = now;
+
+                if (faceMatcher) {
+                  const match = faceMatcher.findBestMatch(detection.descriptor);
+                  if (match.label !== 'unknown') {
+                    const [matchedId, matchedName] = match.label.split('#');
+                    const idNum = parseInt(matchedId);
+                    setPresentStudents(prev => {
+                      if (!prev.has(idNum)) {
+                        const newSet = new Set(prev);
+                        newSet.add(idNum);
+                        setLastScannedName(matchedName);
+                        setTimeout(() => setLastScannedName(null), 2000);
+                        return newSet;
+                      }
+                      return prev;
+                    });
                   }
                 }
-                return; // Tahan face recognition sampai liveness lolos
-              }
-
-              // ── FACE RECOGNITION (throttle 1x/detik agar tidak berat) ──
-              const now = Date.now();
-              if (now - lastRecognitionRef.current < 1000) return;
-              lastRecognitionRef.current = now;
-
-              if (faceMatcher) {
-                const match = faceMatcher.findBestMatch(detection.descriptor);
-                if (match.label !== 'unknown') {
-                  const [matchedId, matchedName] = match.label.split('#');
-                  const idNum = parseInt(matchedId);
-                  setPresentStudents(prev => {
-                    if (!prev.has(idNum)) {
-                      const newSet = new Set(prev);
-                      newSet.add(idNum);
-                      setLastScannedName(matchedName);
-                      setTimeout(() => setLastScannedName(null), 2000);
-                      return newSet;
-                    }
-                    return prev;
-                  });
-                }
-              }
-            });
+              });
           }
         }, 150); // 150ms — cukup cepat tangkap blink
 
@@ -250,7 +250,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
         <div className="px-4 pt-5 pb-4">
           <div className="relative bg-[#0a0a0a] rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center border-2 border-[#e5e5e5]">
             <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
-            
+
             {(scanStatus === 'idle' || scanStatus === 'loading_models') && (
               <div className="absolute inset-0 bg-[#171717] flex flex-col items-center justify-center gap-3 z-20">
                 <Loader2 className="w-8 h-8 text-[#16a34a] animate-spin" />
@@ -259,11 +259,10 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
             )}
 
             <div className="relative z-10 w-[75%] aspect-[3.5/5]">
-              <div className={`absolute inset-0 border-4 rounded-[50%] transition-all duration-300 ${
-                lastScannedName ? 'border-[#16a34a] shadow-[0_0_30px_rgba(22,163,74,0.5)] scale-105' : 
-                !livenessVerified && scanStatus === 'scanning' ? 'border-[#f59e0b] border-dashed animate-pulse' :
-                scanStatus === 'scanning' ? 'border-white/30 border-dashed animate-pulse' : 'border-transparent'
-              }`} />
+              <div className={`absolute inset-0 border-4 rounded-[50%] transition-all duration-300 ${lastScannedName ? 'border-[#16a34a] shadow-[0_0_30px_rgba(22,163,74,0.5)] scale-105' :
+                  !livenessVerified && scanStatus === 'scanning' ? 'border-[#f59e0b] border-dashed animate-pulse' :
+                    scanStatus === 'scanning' ? 'border-white/30 border-dashed animate-pulse' : 'border-transparent'
+                }`} />
               <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center">
                 <div className="text-white text-[11px] font-bold uppercase tracking-widest bg-black/60 px-4 py-1.5 rounded-full backdrop-blur-md">
                   {lastScannedName ? 'Dikenali!' : !livenessVerified && scanStatus === 'scanning' ? `Kedip ${BLINKS_REQUIRED - blinkCount}x` : scanStatus === 'scanning' ? 'Scanning...' : ''}
