@@ -11,8 +11,8 @@ interface FaceRecognitionScreenProps {
 }
 
 // Koordinat Sekolah (Contoh: Ganti dengan koordinat asli sekolah)
-const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 };
-//const SCHOOL_LOCATION = { lat: -7.693499, lng: 111.333072 };
+//const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 };
+const SCHOOL_LOCATION = { lat: -7.693499, lng: 111.333072 };
 const ALLOWED_RADIUS = 100; // Meter (sesuai SRS FR-02)
 
 export function FaceRecognitionScreen({ onClose, onComplete, classId, className }: FaceRecognitionScreenProps) {
@@ -260,8 +260,8 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
 
             <div className="relative z-10 w-[75%] aspect-[3.5/5]">
               <div className={`absolute inset-0 border-4 rounded-[50%] transition-all duration-300 ${lastScannedName ? 'border-[#16a34a] shadow-[0_0_30px_rgba(22,163,74,0.5)] scale-105' :
-                  !livenessVerified && scanStatus === 'scanning' ? 'border-[#f59e0b] border-dashed animate-pulse' :
-                    scanStatus === 'scanning' ? 'border-white/30 border-dashed animate-pulse' : 'border-transparent'
+                !livenessVerified && scanStatus === 'scanning' ? 'border-[#f59e0b] border-dashed animate-pulse' :
+                  scanStatus === 'scanning' ? 'border-white/30 border-dashed animate-pulse' : 'border-transparent'
                 }`} />
               <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center">
                 <div className="text-white text-[11px] font-bold uppercase tracking-widest bg-black/60 px-4 py-1.5 rounded-full backdrop-blur-md">
