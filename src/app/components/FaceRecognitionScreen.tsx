@@ -1,4 +1,4 @@
-import { ChevronLeft, AlertTriangle, CheckCircle2, Scan, Loader2, MapPin, Eye } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, CheckCircle2, Scan, Loader2, MapPin, Eye, Camera } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import * as faceapi from '@vladmandic/face-api';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +26,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
   const [livenessVerified, setLivenessVerified] = useState(false);
   const [blinkCount, setBlinkCount] = useState(0);
   const [enrolledCount, setEnrolledCount] = useState(0);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const [students, setStudents] = useState<any[]>([]);
 
@@ -154,7 +155,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
           console.warn('[FaceRecog] ⚠️ Tidak ada siswa yang sudah di-enroll wajahnya! Gunakan menu Pendaftaran Wajah terlebih dahulu.');
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
         if (videoRef.current) videoRef.current.srcObject = stream;
         streamRef.current = stream;
 
@@ -234,7 +235,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       if (detectionInterval.current) clearInterval(detectionInterval.current);
     };
-  }, [students]);
+  }, [students, facingMode]);
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -243,7 +244,10 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
           <ChevronLeft className="w-5 h-5 text-white" />
           <span className="text-white text-[14px] font-medium">Tutup</span>
         </button>
-        <h1 className="text-white text-[17px] font-semibold flex-1 text-center pr-16 tracking-tight">Presensi {className}</h1>
+        <h1 className="text-white text-[17px] font-semibold flex-1 text-center tracking-tight">Presensi {className}</h1>
+        <button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className="p-2 mr-1 active:bg-white/20 rounded-full transition-colors flex items-center justify-center">
+          <Camera className="w-5 h-5 text-white" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-auto">
