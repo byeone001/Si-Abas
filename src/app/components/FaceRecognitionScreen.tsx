@@ -247,8 +247,8 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="px-4 pt-5 pb-4">
-          <div className="relative bg-[#0a0a0a] rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center border-2 border-[#e5e5e5]">
+        <div className="px-4 pt-4 pb-3 flex justify-center">
+          <div className="relative w-[75%] max-w-[280px] bg-[#0a0a0a] rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center border-2 border-[#e5e5e5] shadow-lg">
             <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
 
             {(scanStatus === 'idle' || scanStatus === 'loading_models') && (
