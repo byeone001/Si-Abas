@@ -111,8 +111,9 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
 
           // Validasi geofencing: blokir akses jika di luar 100m dari sekolah
           if (d > ALLOWED_RADIUS) {
-            setScanStatus('outside_area');
-            return;
+            // setScanStatus('outside_area');
+            // return; // Dibypass sementara agar kamera tetap muncul walau di luar area
+            console.warn("Di luar radius, namun kamera tetap dinyalakan untuk testing.");
           }
 
           // 2. Load Models & Start Camera

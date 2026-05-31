@@ -14,6 +14,7 @@ export function FaceRegistrationScreen({ student, onClose, onSuccess }: FaceRegi
   const [errorMessage, setErrorMessage] = useState('');
   const [faceDescriptor, setFaceDescriptor] = useState<Float32Array | null>(null);
   const [existingMatcher, setExistingMatcher] = useState<faceapi.FaceMatcher | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -59,7 +60,7 @@ export function FaceRegistrationScreen({ student, onClose, onSuccess }: FaceRegi
         // 3. Start Camera
         setStatus('starting_camera');
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
+          video: { facingMode: facingMode, width: { ideal: 640 }, height: { ideal: 480 } } 
         });
         
         if (!isMounted) {
@@ -89,7 +90,7 @@ export function FaceRegistrationScreen({ student, onClose, onSuccess }: FaceRegi
       isMounted = false;
       stopCameraAndScan();
     };
-  }, []);
+  }, [facingMode, student.id]);
 
   const stopCameraAndScan = () => {
     if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
@@ -205,7 +206,9 @@ export function FaceRegistrationScreen({ student, onClose, onSuccess }: FaceRegi
           <p className="text-white/70 text-[12px] font-medium uppercase tracking-wider">Rekam Wajah Siswa</p>
           <p className="text-white text-[16px] font-bold">{student.full_name}</p>
         </div>
-        <div className="w-10"></div> {/* Spacer */}
+        <button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className="p-2 bg-white/20 rounded-full text-white backdrop-blur-md active:bg-white/30 transition-colors">
+          <Camera className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Main Content Area */}
