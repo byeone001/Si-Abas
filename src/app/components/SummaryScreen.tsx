@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { sendWhatsAppNotification } from '@/lib/whatsapp';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 interface SummaryScreenProps {
   onBack: () => void;
@@ -125,20 +126,20 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
       // 1. Ambil data guru (auth user)
       const { data: { user } } = await supabase.auth.getUser();
       
-      // 2. Siapkan data untuk batch insert
+      // 2. Siapkan data untuk batch insert/upsert
       const attendanceData = students.map(student => ({
         student_id: student.id,
         class_id: classId,
         status: student.status,
         subject: subjectName,
         teacher_id: user?.id,
-        date: new Date().toISOString().split('T')[0]
+        date: format(new Date(), 'yyyy-MM-dd')
       }));
 
       // 3. Simpan ke database (Tabel: attendance)
       const { error } = await supabase
         .from('attendance')
-        .insert(attendanceData);
+        .upsert(attendanceData);
 
       if (error) throw error;
 

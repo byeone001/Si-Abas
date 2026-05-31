@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { format } from 'date-fns';
 
 interface AttendanceHistoryScreenProps {
   onBack: () => void;
@@ -12,7 +13,7 @@ interface AttendanceHistoryScreenProps {
 export function AttendanceHistoryScreen({ onBack }: AttendanceHistoryScreenProps) {
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
