@@ -19,6 +19,10 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'loading_models' | 'starting_camera' | 'scanning' | 'success' | 'failed' | 'outside_area'>('idle');
   const [distance, setDistance] = useState<number | null>(null);
+  const [allowOutside, setAllowOutside] = useState<boolean>(() => {
+    const v = localStorage.getItem('allowOutsidePresensi');
+    return v !== null ? JSON.parse(v) : false;
+  });
 
   // States for Continuous Scanning
   const [presentStudents, setPresentStudents] = useState<Set<number>>(new Set());
@@ -91,14 +95,15 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
       // 1. Cek Geofencing dulu (respek ke pengaturan `gpsOtomatis`)
       setScanStatus('idle');
 
+
       // Baca setting dari Pengaturan: jika pengguna mematikan "Akses GPS Otomatis",
+      // atau pengguna meng-override lewat tombol "Izinkan di luar area",
       // kita lewati validasi lokasi agar aplikasi bisa dipakai di mana saja.
       const gpsSetting = localStorage.getItem('gpsOtomatis');
       const gpsEnabled = gpsSetting !== null ? JSON.parse(gpsSetting) : true;
 
-      if (!gpsEnabled) {
-        console.log('GPS validation disabled in settings; skipping geofence check.');
-        // Mulai face detection tanpa cek lokasi
+      if (!gpsEnabled || allowOutside) {
+        console.log('GPS validation disabled or override enabled; skipping geofence check.');
         await startFaceDetection();
         return;
       }
@@ -259,7 +264,7 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
           <span className="text-white text-[14px] font-medium">Tutup</span>
         </button>
         <h1 className="text-white text-[17px] font-semibold flex-1 text-center tracking-tight">Presensi {className}</h1>
-        <button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className="p-2 mr-1 active:bg-white/20 rounded-full transition-colors flex items-center justify-center">
+        <button aria-label="Ganti Kamera" title="Ganti Kamera" onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className="p-2 mr-1 active:bg-white/20 rounded-full transition-colors flex items-center justify-center">
           <Camera className="w-5 h-5 text-white" />
         </button>
       </div>
@@ -298,6 +303,18 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
             <div>
               <p className="text-[#0a0a0a] text-[13px] font-bold">Verifikasi Lokasi</p>
               <p className="text-[#737373] text-[11px]">Jarak: {distance !== null ? `${distance}m dari sekolah` : 'Menghitung...'}</p>
+            </div>
+            <div className="ml-auto">
+              <button
+                onClick={() => {
+                  const newVal = !allowOutside;
+                  setAllowOutside(newVal);
+                  localStorage.setItem('allowOutsidePresensi', JSON.stringify(newVal));
+                }}
+                className={`text-[12px] font-semibold px-3 py-2 rounded-full transition-colors ${allowOutside ? 'bg-[#16a34a] text-white' : 'bg-white border border-[#e5e5e5] text-[#374151]'}`}
+              >
+                {allowOutside ? 'Diizinkan: Luar Area' : 'Izinkan di Luar Area'}
+              </button>
             </div>
           </div>
         </div>
