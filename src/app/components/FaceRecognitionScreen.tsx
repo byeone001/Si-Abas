@@ -88,8 +88,21 @@ export function FaceRecognitionScreen({ onClose, onComplete, classId, className 
 
   useEffect(() => {
     const initProcess = async () => {
-      // 1. Cek Geofencing dulu
+      // 1. Cek Geofencing dulu (respek ke pengaturan `gpsOtomatis`)
       setScanStatus('idle');
+
+      // Baca setting dari Pengaturan: jika pengguna mematikan "Akses GPS Otomatis",
+      // kita lewati validasi lokasi agar aplikasi bisa dipakai di mana saja.
+      const gpsSetting = localStorage.getItem('gpsOtomatis');
+      const gpsEnabled = gpsSetting !== null ? JSON.parse(gpsSetting) : true;
+
+      if (!gpsEnabled) {
+        console.log('GPS validation disabled in settings; skipping geofence check.');
+        // Mulai face detection tanpa cek lokasi
+        await startFaceDetection();
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude;

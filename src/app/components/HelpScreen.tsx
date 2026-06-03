@@ -28,7 +28,7 @@ const faqData = [
   {
     id: 1,
     q: 'Bagaimana cara memulai presensi?',
-    a: 'Buka Dashboard, pilih jadwal kelas yang ingin diabsen, lalu tekan tombol "MULAI PRESENSI". Pastikan lokasi GPS Anda terdeteksi di area sekolah sebelum memulai.',
+    a: 'Buka Dashboard, pilih jadwal kelas yang ingin diabsen, lalu tekan tombol "MULAI PRESENSI". Pastikan lokasi GPS Anda aktif jika fitur validasi lokasi digunakan.',
   },
   {
     id: 2,
@@ -61,7 +61,7 @@ const guideSteps = [
   {
     icon: <MapPin className="w-5 h-5 text-[#16a34a]" />,
     title: 'Pastikan GPS Aktif',
-    desc: 'Buka aplikasi di area sekolah. Sistem akan memvalidasi lokasi secara otomatis.',
+    desc: 'Buka aplikasi di lokasi yang diinginkan. Sistem akan memvalidasi lokasi jika fitur validasi diaktifkan.',
   },
   {
     icon: <BookOpen className="w-5 h-5 text-[#16a34a]" />,
@@ -107,8 +107,8 @@ const troubleshootItems = [
   {
     icon: <MapPin className="w-4 h-4 text-[#8b5cf6]" />,
     bg: 'bg-[#f5f3ff]',
-    title: 'Lokasi Di Luar Area Sekolah',
-    solution: 'Pastikan berada di dalam lingkungan sekolah. Jika lokasi masih tidak terdeteksi, hubungi admin untuk mengatur ulang radius GPS.',
+    title: 'Lokasi Di Luar Area Validasi',
+    solution: 'Jika validasi lokasi aktif, pastikan perangkat berada dalam radius yang ditentukan. Untuk penggunaan di mana saja, nonaktifkan "Akses GPS Otomatis" di Pengaturan.',
   },
 ];
 
