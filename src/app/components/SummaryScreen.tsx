@@ -17,6 +17,23 @@ interface SummaryScreenProps {
   presentStudentIds?: number[];
 }
 
+const getIndonesianDay = () => {
+  try {
+    return new Date().toLocaleDateString('id-ID', { weekday: 'long' });
+  } catch (e) {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return days[new Date().getDay()];
+  }
+};
+
+const getIndonesianDate = () => {
+  try {
+    return new Date().toLocaleDateString('id-ID');
+  } catch (e) {
+    return format(new Date(), 'dd/MM/yyyy');
+  }
+};
+
 export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kelas 3A", subjectName = "Tematik", presentStudentIds = [] }: SummaryScreenProps) {
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,7 +112,7 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
     doc.text(`Laporan Presensi - ${className}`, 14, 22);
     doc.setFontSize(11);
     doc.text(`Mata Pelajaran: ${subjectName}`, 14, 30);
-    doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 36);
+    doc.text(`Tanggal: ${getIndonesianDate()}`, 14, 36);
     
     const tableData = students.map((s, i) => [i + 1, s.full_name, s.status.toUpperCase()]);
     doc.autoTable({
@@ -188,8 +205,8 @@ export function SummaryScreen({ onBack, onSubmit, classId = 1, className = "Kela
               <p className="text-[#64748b] text-[12px] font-medium mt-0.5 uppercase tracking-wide">{subjectName}</p>
             </div>
             <div className="text-right">
-              <p className="text-[#0a0a0a] text-[12px] font-bold">{new Date().toLocaleDateString('id-ID', { weekday: 'long' })}</p>
-              <p className="text-[#64748b] text-[11px]">{new Date().toLocaleDateString('id-ID')}</p>
+              <p className="text-[#0a0a0a] text-[12px] font-bold">{getIndonesianDay()}</p>
+              <p className="text-[#64748b] text-[11px]">{getIndonesianDate()}</p>
             </div>
           </div>
         </div>
