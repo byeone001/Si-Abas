@@ -179,7 +179,7 @@ export function ScheduleManagementScreen({ onBack }: ScheduleManagementScreenPro
                   <div className="flex-1">
                     <div className="flex items-center gap-2 text-[#16a34a] mb-1">
                       <Clock className="w-3.5 h-3.5" />
-                      <p className="text-[12px] font-bold">{s.start_time.slice(0,5)} - {s.end_time.slice(0,5)}</p>
+                      <p className="text-[12px] font-bold">{(s.start_time || '').slice(0,5)} - {(s.end_time || '').slice(0,5)}</p>
                     </div>
                     <h3 className="text-[#0a0a0a] text-[16px] font-bold">{s.subject_name}</h3>
                     <div className="flex items-center gap-1.5 mt-1">

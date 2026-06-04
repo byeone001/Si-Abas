@@ -126,7 +126,7 @@ export function StudentManagementScreen({ onBack }: StudentManagementScreenProps
   };
 
   const filteredStudents = students.filter(s => 
-    s.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.classes?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
