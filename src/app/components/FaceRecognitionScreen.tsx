@@ -12,8 +12,9 @@ interface FaceRecognitionScreenProps {
 
 // Koordinat Sekolah (Contoh: Ganti dengan koordinat asli sekolah)
 //const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 };
-const SCHOOL_LOCATION = { lat: -7.693499, lng: 111.333072 };
-const ALLOWED_RADIUS = 10000000000; // Meter (sesuai SRS FR-02)
+//const SCHOOL_LOCATION = { lat: -7.693499, lng: 111.333072 };
+const SCHOOL_LOCATION = { lat: -7.560435, lng: 111.441118 };
+const ALLOWED_RADIUS = 100; // Meter (sesuai SRS FR-02)
 
 export function FaceRecognitionScreen({ onClose, onComplete, classId, className }: FaceRecognitionScreenProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);

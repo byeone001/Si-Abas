@@ -18,8 +18,9 @@ export function DashboardScreen({ onStartAttendance, onOpenDrawer, userRole = 'g
   // Koordinat Sekolah (Sesuai FaceRecognitionScreen)
   //const SCHOOL_LOCATION = { lat: -7.693503, lng: 111.333048 };
   //const SCHOOL_LOCATION = { lat: -7.693499, lng: 111.333072 };
-  const SCHOOL_LOCATION = { lat: -7.573549, lng: 111.442077 };
-  const ALLOWED_RADIUS = 10000000000; // Meter (sesuai SRS FR-02)
+  const SCHOOL_LOCATION = { lat: -7.560435, lng: 111.441118 };
+  //const SCHOOL_LOCATION = { lat: -7.573549, lng: 111.442077 };
+  const ALLOWED_RADIUS = 100; // Meter (sesuai SRS FR-02)
 
   const [schedules, setSchedules] = useState<any[]>([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
